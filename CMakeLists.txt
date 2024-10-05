@@ -42,13 +42,15 @@ endif()
 add_library(Helper SHARED src/Helper/Helper.cpp)
 add_library(Blob SHARED src/Blob/Blob.cpp)
 cuda_add_library(Loss SHARED src/Loss/Loss.cu)
+cuda_add_library(Layer SHARED src/Layer/Layer.cu)
 
 target_include_directories(Helper PUBLIC include)
 target_include_directories(Blob PUBLIC include)
 target_include_directories(Loss PUBLIC include)
+target_include_directories(Layer PUBLIC include)
 
 add_executable(mnist_train src/mnist_train.cpp)
-target_link_libraries(mnist_train ${CUDA_LIBRARIES} cublas cudnn Helper Blob Loss)
+target_link_libraries(mnist_train ${CUDA_LIBRARIES} cublas cudnn Helper Blob Loss Layer)
 target_include_directories(mnist_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
 ament_target_dependencies(mnist_train rclcpp)
 
@@ -56,6 +58,7 @@ install(TARGETS
         Helper
         Blob
         Loss
+        Layer
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)

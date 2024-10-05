@@ -18,8 +18,8 @@ namespace CUDA_NETWORK
 
             std::string getName();
 
-            virtual float getLoss(Blob<float> *target);
-            virtual int   getAccuracy(Blob<float> *target);
+            virtual float GetLoss(Blob<float> *target);
+            virtual int   GetAccuracy(Blob<float> *target);
 
             void SetCudaContext(CudaContext *context);
 
