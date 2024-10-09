@@ -159,4 +159,173 @@ namespace CUDA_NETWORK
     /****************************************************************
     * Dense Layer                                                  *
     ****************************************************************/
+
+	Dense::Dense(std::string name, int outSize)
+	{
+		name = name;
+		outputSize = outSize;
+	}
+
+	Dense::~Dense()
+	{
+		if(dOneVec != nullptr) cudaFree(dOneVec);
+	}
+
+	__global__ void InitOneVec(float* dOneVec, size_t length)
+	{
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+		if (i >= length) return;
+
+		dOneVec[i] = 1.f;
+	}
+
+	Blob<float> *Dense::Forward(Blob<float> *input)
+	{
+		// initialize weights and biases
+		if(weights == nullptr)
+		{
+			// setup parameter size information
+			inputSize  = input->channel * input->height * input->width;
+		
+			// initialize weight, bias, and output
+			weights = new Blob<float>(1, 1, inputSize, outputSize);
+			biases  = new Blob<float>(1, 1, outputSize);
+		}
+
+		// initilaize input and output
+		if(input == nullptr || batchSize != input->num)
+		{
+			input = input;
+			batchSize  = input->num;
+
+			if(output == nullptr)
+				output  = new Blob<float>(batchSize, outputSize);
+			else
+				output->Reset(batchSize, outputSize);
+		
+			output->Tensor();
+
+			if(dOneVec != nullptr) cudaFree(dOneVec);
+
+			CheckCudaErrors(cudaMalloc((void**)&dOneVec, sizeof(float) * batchSize));
+			InitOneVec<<<(batchSize + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D >>>(dOneVec, batchSize);
+
+			// initialize weights and biases
+			if(loadPretrain && !freeze)
+			{
+				if(LoadParameter())
+				{
+					std::cout << "error occurred.." << std::endl;
+					exit(-1);
+				}
+			}
+			else if(!freeze)
+			{
+				InitWeightBias();
+			}
+			else
+			{
+				/* do nothing */
+			}
+		}
+
+
+		// output = weights^T * input (without biases)
+		CheckCublasErrors(
+			cublasSgemm(cuda->Cublas(),
+				CUBLAS_OP_T, CUBLAS_OP_N, 
+				outputSize, batchSize, inputSize,
+				&cuda->one,  
+				weights->Cuda(), inputSize, 
+				input->Cuda(), inputSize,
+				&cuda->zero, 
+				output->Cuda(),  outputSize));
+
+		// output += biases * dOneVec ^ T
+		CheckCublasErrors(
+			cublasSgemm(cuda->Cublas(),
+				CUBLAS_OP_N, CUBLAS_OP_N, 
+				outputSize, batchSize, 1,
+				&cuda->one, 
+				biases->Cuda(), outputSize, 
+				dOneVec, 1, 
+				&cuda->one, 
+				output->Cuda(), outputSize));
+
+	#if (DEBUG_DENSE & 0x01)
+		input->Print(name + "::input",  true);
+		weights->Print(name + "::weight", true);
+		biases->Print(name + "::bias",   true);
+		output->Print(name + "::output", true);
+	#endif // DEBUG_DENSE
+
+		return output;
+	}
+
+	Blob<float> *Dense::Backward(Blob<float> *gradOutput)
+	{
+		if(gradWeights == nullptr)
+		{
+			gradWeights = new Blob<float>(weights->Shape());
+			gradBiases  = new Blob<float>(biases->Shape());
+		}
+
+		if(gradInput == nullptr || batchSize != gradOutput->num)
+		{
+			gradOutput  = gradOutput;
+
+			if (gradInput == nullptr)
+				gradInput   = new Blob<float>(input->Shape());
+			else
+				gradInput->Reset(input->Shape());
+		}
+
+		// db = (dy) * d_one_vec
+		cublasSgemv(cuda->Cublas(),
+				CUBLAS_OP_N,
+				outputSize, batchSize,
+				&cuda->one,
+				gradOutput->Cuda(), outputSize,
+				dOneVec, 1,
+				&cuda->zero,
+				gradBiases->Cuda(), 1);
+
+		// dw = x * (dy)^T
+		cublasSgemm(cuda->Cublas(),
+			CUBLAS_OP_N, CUBLAS_OP_T,
+			inputSize, outputSize, batchSize,
+			&cuda->one,
+			input->Cuda(),        inputSize,
+			gradOutput->Cuda(),   outputSize,
+			&cuda->zero,
+			gradWeights->Cuda(),  inputSize);
+
+		// dx = W * dy
+		if (!gradientStop)
+			cublasSgemm(cuda->Cublas(),
+				CUBLAS_OP_N, CUBLAS_OP_N,
+				inputSize, batchSize, outputSize,
+				&cuda->one,
+				weights->Cuda(),    inputSize,
+				gradOutput->Cuda(), outputSize,
+				&cuda->zero, 
+				gradInput->Cuda(),  inputSize);
+
+	#if (DEBUG_DENSE & 0x02)
+		std::cout << name << "[BACKWARD]" << std::endl;
+		gradOutput->Print(name + "::gradients", true, gradOutput->num);
+		gradWeights->Print(name + "::gfilter", true);
+		gradBiases->Print(name + "::gbias", true);
+		if(!gradientStop) gradInput->Print(name + "::gdata", true);
+	#endif // DEBUG_DENSE
+
+		return gradInput;
+	}
+
+	/****************************************************************
+ 	* Activation Layer                                             *
+ 	****************************************************************/
+
+
 }
