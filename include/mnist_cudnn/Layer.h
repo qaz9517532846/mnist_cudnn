@@ -106,6 +106,21 @@ namespace CUDA_NETWORK
             float coef;
     };
 
+    class Softmax: public Layer
+    {
+        public:
+            Softmax(std::string name);
+            ~Softmax();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradInput);
+
+            float getLoss(Blob<float> *target);
+            int   getAccuracy(Blob<float> *target);
+
+        private:
+            CrossEntropyLoss loss;
+    };
 }
 
 #endif

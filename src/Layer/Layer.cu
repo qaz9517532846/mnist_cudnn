@@ -327,5 +327,199 @@ namespace CUDA_NETWORK
  	* Activation Layer                                             *
  	****************************************************************/
 
+	Activation::Activation(std::string name, cudnnActivationMode_t mode, float coef)
+	{
+		name = name;
+		mode = mode;
+		coef = coef;
+
+		cudnnCreateActivationDescriptor(&actDesc);
+		cudnnSetActivationDescriptor(actDesc, mode, CUDNN_PROPAGATE_NAN, coef);
+	}
+
+	Activation::~Activation()
+	{
+		cudnnDestroyActivationDescriptor(actDesc);
+	}
+
+	Blob<float> *Activation::Forward(Blob<float> *input)
+	{
+		if(input == nullptr || batchSize != input->num)
+		{
+			input = input;
+			inputDesc = input->Tensor();
+			batchSize = input->num;
+
+			if(output == nullptr)
+				output = new Blob<float>(input->Shape());
+			else
+				output->Reset(input->Shape());
+
+			outputDesc = output->Tensor();
+		}
+
+		cudnnActivationForward(cuda->Cudnn(),
+			actDesc,
+			&cuda->one,
+			inputDesc,
+			input->Cuda(),
+			&cuda->zero,
+			outputDesc,
+			output->Cuda());
+
+		return output;
+	}
+
+	Blob<float> *Activation::Backward(Blob<float> *gradOutput)
+	{
+		if (gradInput == nullptr || batchSize != gradOutput->num)
+		{
+			gradOutput = gradOutput;
+
+			if (gradInput == nullptr)
+				gradInput = new Blob<float>(input->Shape());
+			else
+				gradInput->Reset(input->Shape());		
+		}
+
+		cudnnActivationBackward(cuda->Cudnn(),
+			actDesc,
+			&cuda->one, 
+			outputDesc, output->Cuda(),
+			outputDesc, gradOutput->Cuda(), 
+			inputDesc, input->Cuda(), 
+			&cuda->zero, 
+			inputDesc, gradInput->Cuda());
+
+		return gradInput;
+	}
+
+	/****************************************************************
+	 * Softmax definition                                           *
+	 ****************************************************************/
+
+	Softmax::Softmax(std::string name)
+	{
+		name = name;
+	}
+
+	Softmax::~Softmax()
+	{
+
+	}
+
+	Blob<float> *Softmax::Forward(Blob<float> *input)
+	{
+		if(input == nullptr || batchSize != input->num)
+		{
+			input = input;
+			inputDesc = input->Tensor();
+			batchSize = input->num;
+		
+			if(output == nullptr)
+				output = new Blob<float>(input->Shape());
+			else
+				output->Reset(input->Shape());		
+
+			outputDesc = output->Tensor();
+		}
+
+	#if (DEBUG_SOFTMAX & 0x01)
+		std::cout << name << "[FORWARD]" << std::endl;
+		input->Print(name + "::input", true, input->num);
+	#endif
+
+		CheckCudnnErrors(
+			cudnnSoftmaxForward(cuda->Cudnn(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+				&cuda->one,  inputDesc,  input->Cuda(),
+				&cuda->zero, outputDesc, output->Cuda()));
+
+	#if (DEBUG_SOFTMAX & 0x01)
+		output->Print(name + "::output", true, input->num);
+	#endif
+
+		return output;
+	}
+
+	Blob<float> *Softmax::Backward(Blob<float> *target)
+	{
+		CheckCudaErrors(cudaDeviceSynchronize());
+
+		if(gradInput == nullptr || batchSize != target->num)
+		{
+			if (gradInput == nullptr)
+				gradInput = new Blob<float>(input->Shape());
+			else
+		 		gradInput->Reset(input->Shape());
+		}
+
+		// set grad_input_ as predict
+		CheckCudaErrors(cudaMemcpyAsync(gradInput->Cuda(), 
+			output->Cuda(), output->BufSize(), 
+			cudaMemcpyDeviceToDevice));
+
+		// set gradInput = predict - target	
+		CheckCublasErrors(
+			cublasSaxpy(cuda->Cublas(), target->Length(),
+				&cuda->minusOne, target->Cuda(), 1,
+				gradInput->Cuda(), 1));
+
+		// normalize the grad_output by the batch size
+		int gradOutputSize = target->num * target->channel * target->height * target->width;
+		float scale = 1.f / static_cast<float>(target->num);
+		CheckCublasErrors(cublasSscal(cuda->Cublas(), gradOutputSize, &scale, gradInput->Cuda(), 1));
+
+	#if (DEBUG_SOFTMAX & 0x02)
+		std::cout << name_ << "[BACKWARD]" << std::endl;
+		input->Print( name_ + "::input", true);
+		output->Print(name_ + "::predict", true);
+		target->Print( name_ + "::y", true, target->num);
+		gradInput->Print(name_ + "::dx", true, target->num);
+	#endif
+
+		return gradInput;
+	}
+
+	float Softmax::getLoss(Blob<float> *target)
+	{
+		return loss.Loss(output, target);
+	}
+
+	int Softmax::getAccuracy(Blob<float> *target)
+	{
+		int batchSize = output->num;
+		int outputSize = output->Size();
+
+		assert(batchSize == target->num);
+		assert(outputSize == target->Size());
+
+		float *hOutput, *hTarget;
+		int idxOutput, idxTarget;
+		int hitCount = 0;
+
+		// get predicts and targets
+		hOutput = output->To(HOST);
+		hTarget = target->To(HOST);
+
+		// idxOutput = idxTarget = 0;
+		for(int b = 0; b < batchSize; b++)
+		{
+			idxOutput = 0;
+			idxTarget = 0;
+
+			for (int i = 1; i < 10; i++)
+			{
+				if (hOutput[b * outputSize + i] > hOutput[b * outputSize + idxOutput])
+					idxOutput = i;
+				if (hTarget[b * outputSize + i] > hTarget[b * outputSize + idxTarget])
+					idxTarget = i;
+			}
+
+			if (idxOutput == idxTarget)
+				hitCount++;
+		}
+
+		return hitCount;
+	}
 
 }

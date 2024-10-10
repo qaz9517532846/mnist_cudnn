@@ -40,9 +40,6 @@ namespace CUDA_NETWORK
             int FileRead(std::string filename);
             int FileWrite(std::string filename);
 
-            int size;
-            int lenght;
-            int bufSize;
             int num;
             int channel;
             int height;
