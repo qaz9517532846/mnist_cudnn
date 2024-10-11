@@ -121,6 +121,55 @@ namespace CUDA_NETWORK
         private:
             CrossEntropyLoss loss;
     };
+
+    class Conv2D: public Layer
+    {
+        public:
+            Conv2D(std::string name, int out_channels, int kernel_size, int stride = 1, int padding = 0, int dilation = 1);
+            ~Conv2D();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradOutput);
+
+        private:
+            int outChannels;
+            int kernelSize;
+            int stride;
+            int padding;
+            int dilation;
+    
+            std::array<int, 4> outputSize;
+
+            // convolution
+            cudnnConvolutionDescriptor_t    convDesc;
+    
+            cudnnConvolutionFwdAlgo_t       convFwdAlgo;
+            cudnnConvolutionBwdDataAlgo_t   convBwdDataAlgo;
+            cudnnConvolutionBwdFilterAlgo_t convBwdFilterAlgo;
+
+            size_t workspaceSize = 0;
+            void** dWorkspace = nullptr;
+            void SetWorkspace();
+    };
+
+    class Pooling: public Layer
+    {
+        public: 
+            Pooling(std::string name, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode);
+            ~Pooling();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradOutput);
+
+        private:
+            int kernelSize;
+            int padding;
+            int stride;
+            cudnnPoolingMode_t mode;
+
+            std::array<int, 4> outputSize;
+            cudnnPoolingDescriptor_t poolDesc;
+    };
 }
 
 #endif

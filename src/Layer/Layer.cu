@@ -522,4 +522,287 @@ namespace CUDA_NETWORK
 		return hitCount;
 	}
 
+	/****************************************************************
+ 	 * Layer definition                                             *
+ 	****************************************************************/
+
+	/**
+ 	* Convolutional layer with bias
+ 	*/
+	Conv2D::Conv2D(std::string name, int outChannels, int kernelSize, int stride, int padding, int dilation) :  outChannels(outChannels),
+																												kernelSize(kernelSize),
+																												stride(stride),
+																												padding(padding),
+																												dilation(dilation)
+	{
+		name = name;
+
+		// create cudnn container handles
+		cudnnCreateFilterDescriptor(&filterDesc);
+		cudnnCreateConvolutionDescriptor(&convDesc);
+		CheckCudnnErrors(
+			cudnnSetConvolution2dDescriptor(convDesc, padding, padding, stride,  stride, dilation, dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+
+		dWorkspace = nullptr;
+	}
+
+	Conv2D::~Conv2D()
+	{
+		// distroy cudnn container resources
+		cudnnDestroyFilterDescriptor(filterDesc);
+		cudnnDestroyConvolutionDescriptor(convDesc);
+
+		// terminate internal created blobs
+		if(dWorkspace != nullptr)	cudaFree(dWorkspace);
+	}
+
+	void Conv2D::SetWorkspace()
+	{
+		size_t tempSize = 0;
+
+		cudnnConvolutionFwdAlgoPerf_t			fwdAlgoPerfResults[CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
+		cudnnConvolutionBwdFilterAlgoPerf_t 	bwdFilterAlgoPerfResults[CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT];
+		cudnnConvolutionBwdDataAlgoPerf_t		bwdDataAlgoPerfResults[CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT];
+
+		// forward
+	#if CUDNN_MAJOR >= 8
+		int algoMaxCount;
+		CheckCudnnErrors(cudnnGetConvolutionForwardAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
+		std::cout << this->name << ": Available Algorithm Count [FWD]: " << algoMaxCount << std::endl;
+		CheckCudnnErrors(cudnnGetConvolutionForwardAlgorithm_v7(cuda->Cudnn(), inputDesc, filterDesc, convDesc, outputDesc, algoMaxCount, 0, fwdAlgoPerfResults));
+		convFwdAlgo = fwdAlgoPerfResults[0].algo;
+	#else
+		CheckCudnnErrors(cudnnGetConvolutionForwardAlgorithm(cuda->Cudnn(), inputDesc, filterDesc, convDesc, outputDesc, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &convFwdAlgo));
+	#endif
+		CheckCudnnErrors(cudnnGetConvolutionForwardWorkspaceSize(cuda->Cudnn(), inputDesc, filterDesc, convDesc, outputDesc, convFwdAlgo, &tempSize));
+		workspaceSize = std::max(workspaceSize, tempSize);
+
+		// bwd - filter
+	#if CUDNN_MAJOR >= 8
+		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
+		std::cout << this->name << ": Available Algorithm Count [BWD-filter]: " << algoMaxCount << std::endl;
+		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterAlgorithm_v7(cuda->Cudnn(), inputDesc, outputDesc, convDesc, filterDesc, algoMaxCount, 0, bwdFilterAlgoPerfResults));
+		convBwdFilterAlgo = bwdFilterAlgoPerfResults[0].algo;
+	#else
+		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterAlgorithm(cuda->Cudnn(), inputDesc, outputDesc, convDesc, filterDesc, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &convBwdFilterAlgo));
+	#endif
+		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterWorkspaceSize(cuda->Cudnn(),
+			inputDesc, outputDesc, convDesc, filterDesc,
+			convBwdFilterAlgo, &tempSize));
+		workspaceSize = std::max(workspaceSize, tempSize);
+
+		// bwd - data
+	#if CUDNN_MAJOR >= 8
+		CheckCudnnErrors(cudnnGetConvolutionBackwardDataAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
+		std::cout << this->name << ": Available Algorithm Count [BWD-data]: " << algoMaxCount << std::endl;
+		CheckCudnnErrors(cudnnGetConvolutionBackwardDataAlgorithm_v7(cuda->Cudnn(), filterDesc, outputDesc, convDesc, inputDesc, algoMaxCount, 0, bwdDataAlgoPerfResults));
+		convBwdDataAlgo = bwdDataAlgoPerfResults[0].algo;
+	#else
+		CheckCudnnErrors(cudnnGetConvolutionBackwardDataAlgorithm(cuda->Cudnn(), filterDesc, outputDesc, convDesc, inputDesc, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &convBwdDataAlgo));
+	#endif
+		CheckCudnnErrors(cudnnGetConvolutionBackwardDataWorkspaceSize(cuda->Cudnn(), filterDesc, outputDesc, convDesc, inputDesc, convBwdDataAlgo, &tempSize));
+		workspaceSize = std::max(workspaceSize, tempSize);
+
+		if(workspaceSize > 0)
+		{
+			if(dWorkspace != nullptr) CheckCudaErrors(cudaFree(dWorkspace));
+			CheckCudaErrors(cudaMalloc((void**)&dWorkspace, workspaceSize));
+		}
+	}
+
+	Blob<float> *Conv2D::Forward(Blob<float> *input)
+	{
+		// initialize weights and bias
+		if(weights == nullptr)
+		{
+			// initialize containers handles
+			CheckCudnnErrors(cudnnSetFilter4dDescriptor(filterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, outChannels, input->channel, kernelSize, kernelSize));
+			weights = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
+			biases  = new Blob<float>(1, outChannels);	// bias size
+			biasDesc = biases->Tensor();
+		}
+ 
+		// initilaize input and output
+		if(input == nullptr || batchSize != input->num)
+		{
+			// initialize input
+			input = input;
+			inputDesc = input->Tensor();
+			batchSize  = input->num;
+
+			// initilaize output
+			CheckCudnnErrors(cudnnGetConvolution2dForwardOutputDim(convDesc, inputDesc, filterDesc, &outputSize[0], &outputSize[1], &outputSize[2], &outputSize[3]));
+
+			if (output == nullptr)
+				output  = new Blob<float>(outputSize);
+			else
+				output->Reset(outputSize);
+
+			outputDesc = output->Tensor();
+
+			// initialize workspace for cudnn
+			SetWorkspace();
+
+			// initialize weights
+			if(loadPretrain && !freeze)
+			{
+				if(LoadParameter())
+				{
+					std::cout << "error occurred.." << std::endl;
+					exit(-1);
+				}
+			}
+			else if (!freeze)
+			{
+				InitWeightBias();
+			}
+			else
+			{
+				/* do nothing */
+			}
+		}
+
+		CheckCudnnErrors(cudnnConvolutionForward(cuda->Cudnn(),
+			&cuda->one,  inputDesc,  input->Cuda(),
+			filterDesc, weights->Cuda(), convDesc, convFwdAlgo, dWorkspace,  workspaceSize,
+			&cuda->zero, outputDesc, output->Cuda()));
+
+		CheckCudnnErrors(cudnnAddTensor(cuda->Cudnn(), 
+			&cuda->one, biasDesc, biases->Cuda(), 
+			&cuda->one, outputDesc, output->Cuda()));
+
+	#if (DEBUG_CONV & 0x01)
+		input->Print(name + "::input", true, input->num, 28);
+		weights->Print(name + "::weight", true);
+		biases->Print(name + "::bias", true);
+		output->Print(name + "::output", true);
+	#endif
+
+		return output;
+	}
+
+	Blob<float> *Conv2D::Backward(Blob<float> *gradOutput)
+	{
+		// initialize gradOutput back-propagation space
+		if(gradInput == nullptr || batchSize != gradOutput->num)
+		{
+			gradOutput  = gradOutput;
+			gradWeights = new Blob<float>(weights->Shape());
+			gradBiases  = new Blob<float>(1, biases->channel);
+
+			if(gradInput == nullptr)
+				gradInput = new Blob<float>(input->Shape());
+			else
+				gradInput->Reset(input->Shape());
+		}
+
+		// gradients of biases
+		CheckCudnnErrors(cudnnConvolutionBackwardBias(cuda->Cudnn(), &cuda->one, outputDesc, gradOutput->Cuda(), &cuda->zero, biasDesc, gradBiases->Cuda()));
+	
+		// gradients of weights 
+		CheckCudnnErrors(
+			cudnnConvolutionBackwardFilter(cuda->Cudnn(),
+				&cuda->one, 
+				inputDesc, input->Cuda(), 
+				outputDesc, gradOutput->Cuda(),
+				convDesc, convBwdFilterAlgo, dWorkspace, workspaceSize,
+				&cuda->zero, 
+				filterDesc, gradWeights->Cuda()));
+
+		// gradients of input data
+		if (!gradientStop)
+			CheckCudnnErrors(
+				cudnnConvolutionBackwardData(cuda->Cudnn(),
+					&cuda->one, 
+					filterDesc, weights->Cuda(), 
+					outputDesc, gradOutput->Cuda(), 
+					convDesc, convBwdDataAlgo, dWorkspace, workspaceSize,
+					&cuda->zero, 
+					inputDesc, gradInput->Cuda()));
+
+	#if (DEBUG_CONV & 0x02)
+		std::cout << name << "[BACKWARD]" << std::endl;
+		gradOutput->Print(name + "::gradients", true);
+		gradBiases->Print(name + "gbias", true);
+		gradWeights->Print(name + "gfilter", true);
+		if (!gradientStop)
+			gradInput->Print(name +"gdata", true);
+	#endif
+
+	#if (DEBUG_CONV & 0x04)
+		gradOutput->Print( name_ + "::gradients", true);
+		gradBiases->Print( name_ + "::gbias", true);
+	#endif
+
+		return gradInput;
+	}
+
+	/****************************************************************
+ 	 * Layer definition                                             *
+ 	****************************************************************/
+	Pooling::Pooling(std::string name, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode) :  kernelSize(kernelSize),
+																											padding(padding),
+																											stride(stride),
+																											mode(mode)
+	{
+		name = name;
+		cudnnCreatePoolingDescriptor(&poolDesc);
+		cudnnSetPooling2dDescriptor(poolDesc, mode, CUDNN_PROPAGATE_NAN, kernelSize, kernelSize, padding, padding, stride, stride);
+	}
+
+	Pooling::~Pooling()
+	{
+		cudnnDestroyPoolingDescriptor(poolDesc);
+	}
+
+	Blob<float> *Pooling::Forward(Blob<float> *input)
+	{
+		if(input == nullptr || batchSize != input->num)
+		{
+			input = input;
+
+			// resource initialize
+			inputDesc = input->Tensor();
+			batchSize = input->num;
+		
+			// setting output
+			cudnnGetPooling2dForwardOutputDim(poolDesc, inputDesc, &outputSize[0], &outputSize[1], &outputSize[2], &outputSize[3]);
+			if(output == nullptr)
+				output = new Blob<float>(outputSize);
+			else
+				output->Reset(outputSize);
+		
+			outputDesc = output->Tensor();
+		}
+
+		cudnnPoolingForward(cuda->Cudnn(), poolDesc,
+			&cuda->one,   inputDesc,  input->Cuda(),
+			&cuda->zero,  outputDesc, output->Cuda());
+
+		return output;
+	}
+
+	Blob<float> *Pooling::Backward(Blob<float> *gradOutput)
+	{
+		if (gradInput == nullptr || batchSize != gradOutput->num)
+		{
+			gradOutput = gradOutput;
+
+			if (gradInput == nullptr)
+				gradInput = new Blob<float>(input->Shape());
+			else
+				gradInput->Reset(input->Shape());
+		}
+
+		CheckCudnnErrors(
+			cudnnPoolingBackward(cuda->Cudnn(), poolDesc,
+				&cuda->one,  
+				outputDesc, output->Cuda(),
+				outputDesc, gradOutput->Cuda(), 
+				inputDesc,  input->Cuda(), 
+				&cuda->zero, 
+				inputDesc,  gradInput->Cuda()));
+
+		return gradInput;
+	}
 }
