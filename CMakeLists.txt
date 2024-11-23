@@ -20,9 +20,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(OpenCV REQUIRED)
+
+find_library(CUDNN_LIBRARY cudnn PATHS /usr/local/cuda/lib64)
 
 include_directories(
   ${CUDA_INCLUDE_DIRS} 
+  ${OpenCV_INCLUDE_DIRS}
   include
 )
 
@@ -42,17 +46,26 @@ endif()
 add_library(Helper SHARED src/Helper/Helper.cpp)
 add_library(Blob SHARED src/Blob/Blob.cpp)
 add_library(NetWork SHARED src/NetWork/NetWork.cpp)
+add_library(Mnist SHARED src/Mnist/Mnist.cpp)
 cuda_add_library(Loss SHARED src/Loss/Loss.cu)
 cuda_add_library(Layer SHARED src/Layer/Layer.cu)
 
-target_include_directories(Helper PUBLIC include)
-target_include_directories(Blob PUBLIC include)
-target_include_directories(Loss PUBLIC include)
-target_include_directories(Layer PUBLIC include)
-target_include_directories(NetWork PUBLIC include)
+target_include_directories(Helper PRIVATE include)
+target_include_directories(Blob PRIVATE include)
+target_include_directories(Loss PRIVATE include)
+target_include_directories(Layer PRIVATE include)
+target_include_directories(NetWork PRIVATE include)
+target_include_directories(Mnist PRIVATE include)
+
+target_link_libraries(Helper ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas)
+target_link_libraries(Loss ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas)
+target_link_libraries(Blob ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas)
+target_link_libraries(Layer ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas Helper Loss Blob)
+target_link_libraries(NetWork ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas Layer Helper Blob)
+target_link_libraries(Mnist ${OpenCV_LIBRARIES} Blob)
 
 add_executable(mnist_train src/mnist_train.cpp)
-target_link_libraries(mnist_train ${CUDA_LIBRARIES} cublas cudnn Helper Blob Loss Layer NetWork)
+target_link_libraries(mnist_train Helper Blob Loss Layer NetWork Mnist)
 target_include_directories(mnist_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
 ament_target_dependencies(mnist_train rclcpp)
 
@@ -61,6 +74,8 @@ install(TARGETS
         Blob
         Loss
         Layer
+        NetWork
+        Mnist
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)

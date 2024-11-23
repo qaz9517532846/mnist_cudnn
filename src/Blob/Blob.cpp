@@ -3,19 +3,19 @@
 namespace CUDA_NETWORK
 {
     template <typename ftype>
-    Blob<ftype>::Blob(int n, int c, int h, int w): num(n), channel(c), height(h), width(w) 
+    inline Blob<ftype>::Blob(int n, int c, int h, int w): num(n), channel(c), height(h), width(w) 
     {
         hPtr = new float[num * channel * height * width];
     }
 
     template <typename ftype>
-    Blob<ftype>::Blob(std::array<int, 4> size): num(size[0]), channel(size[1]), height(size[2]), width(size[3]) 
+    inline Blob<ftype>::Blob(std::array<int, 4> size): num(size[0]), channel(size[1]), height(size[2]), width(size[3]) 
     {
         hPtr = new float[num * channel * height * width];
     }
 
     template <typename ftype>
-    Blob<ftype>::~Blob() 
+    inline Blob<ftype>::~Blob() 
     { 
         if (hPtr != nullptr) delete [] hPtr; 
 	    if (dPtr != nullptr) cudaFree(dPtr);
@@ -220,4 +220,5 @@ namespace CUDA_NETWORK
         return 0;
     }
 
+    template class Blob<float>;
 }

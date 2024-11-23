@@ -154,7 +154,7 @@ namespace CUDA_NETWORK
 	    std::cout << ".. model Configuration .." << std::endl;
 	    for (auto layer : layersVect)
         {
-		    std::cout << "CUDA: " << layer->getName() << std::endl;
+		    std::cout << "CUDA: " << layer->GetName() << std::endl;
 		    layer->SetCudaContext(cuda);
 	    }
     }

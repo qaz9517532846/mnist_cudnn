@@ -26,7 +26,7 @@ namespace CUDA_NETWORK
     {
 
     #if (DEBUG_FORWARD > 0 || DEBUG_BACKWARD > 0)
-	    std::cout << "Destroy Layer: " << name << std::endl;
+	    std::cout << "Destroy Layer: " << layerName << std::endl;
     #endif
 
         if(output       != nullptr)  delete output;
@@ -61,7 +61,7 @@ namespace CUDA_NETWORK
 	    weights->To(DEV_TYPE::CUDA);
 	    biases->To(DEV_TYPE::CUDA);
 
-	    std::cout << ".. initialized " << name << " layer .." << std::endl;
+	    std::cout << ".. initialized " << layerName << " layer .." << std::endl;
     }
 
     void Layer::UpdateWeightsBiases(float learningRate)
@@ -72,15 +72,15 @@ namespace CUDA_NETWORK
 	    {
 
         #if(DEBUG_UPDATE)
-		    weights->print(name + "::weights (before update)", true);
-		    gradWeights->print(name + "::gweights", true);
+		    weights->print(layerName + "::weights (before update)", true);
+		    gradWeights->print(layerName + "::gweights", true);
         #endif // DEBUG_UPDATE
 
 		// w = w + eps * dw
 		    CheckCublasErrors(cublasSaxpy(cuda->Cublas(), weights->Length(), &eps, gradWeights->Cuda(), 1, weights->Cuda(), 1));
 
         #if(DEBUG_UPDATE)
-		    weights->print(name + "weights (after update)", true);
+		    weights->print(layerName + "weights (after update)", true);
 		    // getchar();
         #endif // DEBUG_UPDATE
 	    }
@@ -89,15 +89,15 @@ namespace CUDA_NETWORK
 	    {
 
         #if(DEBUG_UPDATE)
-		    biases->print(name + "biases (before update)", true);
-		    gradBiases->print(name + "gbiases", true);
+		    biases->print(layerName + "biases (before update)", true);
+		    gradBiases->print(layerName + "gbiases", true);
         #endif // DEBUG_UPDATE
 
 		// b = b + eps * db
 		CheckCublasErrors(cublasSaxpy(cuda->Cublas(), biases->Length(), &eps, gradBiases->Cuda(), 1, biases->Cuda(), 1));
 
         #if (DEBUG_UPDATE)
-		    biases->print(name + "biases (after update)", true);
+		    biases->print(layerName + "biases (after update)", true);
 		    // getchar();
         #endif // DEBUG_UPDATE
 	    }
@@ -120,13 +120,13 @@ namespace CUDA_NETWORK
 	    std::stringstream filenameWeights, filenameBiases;
 
 	    // load weights and biases pretrained parameters
-	    filenameWeights << name << ".bin";
+	    filenameWeights << layerName << ".bin";
 	    if(weights->FileRead(filenameWeights.str())) return -1;
 
-	    filenameBiases << name << ".bias.bin";
+	    filenameBiases << layerName << ".bias.bin";
 	    if(biases->FileRead(filenameBiases.str())) return -2;
 
-	    std::cout << ".. loaded " << name << " pretrain parameter.." << std::endl;
+	    std::cout << ".. loaded " << layerName << " pretrain parameter.." << std::endl;
 
 	    return 0;
     }
@@ -135,19 +135,19 @@ namespace CUDA_NETWORK
     {
 	    std::stringstream filenameWeights, filenameBiases;
 
-	    std::cout << ".. saving " << name << " parameter ..";
+	    std::cout << ".. saving " << layerName << " parameter ..";
 	
 	    // Write weights file
 	    if(weights)
 	    {
-		    filenameWeights << name << ".bin";
+		    filenameWeights << layerName << ".bin";
 		    if(weights->FileWrite(filenameWeights.str())) return -1;
 	    }
 	
 	    // Write bias file
 	    if(biases)
 	    {
-		    filenameBiases << name << ".bias.bin";
+		    filenameBiases << layerName << ".bias.bin";
 		    if(biases->FileWrite(filenameBiases.str())) return -2;
 	    }
 
@@ -156,13 +156,43 @@ namespace CUDA_NETWORK
 	    return 0;
     }
 
+	std::string Layer::GetName()
+	{
+		return layerName;
+	}
+
+	void Layer::SetCudaContext(CudaContext *context)
+	{
+		cuda = context;
+	}
+
+	void Layer::SetLoadPretrain()
+	{ 
+		loadPretrain = true;
+	}
+
+    void Layer::SetGradientStop()
+	{
+		gradientStop = true;
+	}
+
+    void Layer::Freeze()
+	{
+		freeze = true;
+	}
+    
+	void Layer::UnFreeze()
+	{
+		freeze = false;
+	}
+
     /****************************************************************
     * Dense Layer                                                  *
     ****************************************************************/
 
 	Dense::Dense(std::string name, int outSize)
 	{
-		name = name;
+		layerName = name;
 		outputSize = outSize;
 	}
 
@@ -254,10 +284,10 @@ namespace CUDA_NETWORK
 				output->Cuda(), outputSize));
 
 	#if (DEBUG_DENSE & 0x01)
-		input->Print(name + "::input",  true);
-		weights->Print(name + "::weight", true);
-		biases->Print(name + "::bias",   true);
-		output->Print(name + "::output", true);
+		input->Print(layerName + "::input",  true);
+		weights->Print(layerName + "::weight", true);
+		biases->Print(layerName + "::bias",   true);
+		output->Print(layerName + "::output", true);
 	#endif // DEBUG_DENSE
 
 		return output;
@@ -313,11 +343,11 @@ namespace CUDA_NETWORK
 				gradInput->Cuda(),  inputSize);
 
 	#if (DEBUG_DENSE & 0x02)
-		std::cout << name << "[BACKWARD]" << std::endl;
-		gradOutput->Print(name + "::gradients", true, gradOutput->num);
-		gradWeights->Print(name + "::gfilter", true);
-		gradBiases->Print(name + "::gbias", true);
-		if(!gradientStop) gradInput->Print(name + "::gdata", true);
+		std::cout << layerName << "[BACKWARD]" << std::endl;
+		gradOutput->Print(layerName + "::gradients", true, gradOutput->num);
+		gradWeights->Print(layerName + "::gfilter", true);
+		gradBiases->Print(layerName + "::gbias", true);
+		if(!gradientStop) gradInput->Print(layerName + "::gdata", true);
 	#endif // DEBUG_DENSE
 
 		return gradInput;
@@ -329,12 +359,12 @@ namespace CUDA_NETWORK
 
 	Activation::Activation(std::string name, cudnnActivationMode_t mode, float coef)
 	{
-		name = name;
-		mode = mode;
-		coef = coef;
+		layerName = name;
+		actMode = mode;
+		actCoef = coef;
 
 		cudnnCreateActivationDescriptor(&actDesc);
-		cudnnSetActivationDescriptor(actDesc, mode, CUDNN_PROPAGATE_NAN, coef);
+		cudnnSetActivationDescriptor(actDesc, actMode, CUDNN_PROPAGATE_NAN, actCoef);
 	}
 
 	Activation::~Activation()
@@ -400,7 +430,7 @@ namespace CUDA_NETWORK
 
 	Softmax::Softmax(std::string name)
 	{
-		name = name;
+		layerName = name;
 	}
 
 	Softmax::~Softmax()
@@ -425,8 +455,8 @@ namespace CUDA_NETWORK
 		}
 
 	#if (DEBUG_SOFTMAX & 0x01)
-		std::cout << name << "[FORWARD]" << std::endl;
-		input->Print(name + "::input", true, input->num);
+		std::cout << layerName << "[FORWARD]" << std::endl;
+		input->Print(layerName + "::input", true, input->num);
 	#endif
 
 		CheckCudnnErrors(
@@ -435,7 +465,7 @@ namespace CUDA_NETWORK
 				&cuda->zero, outputDesc, output->Cuda()));
 
 	#if (DEBUG_SOFTMAX & 0x01)
-		output->Print(name + "::output", true, input->num);
+		output->Print(layerName + "::output", true, input->num);
 	#endif
 
 		return output;
@@ -470,11 +500,11 @@ namespace CUDA_NETWORK
 		CheckCublasErrors(cublasSscal(cuda->Cublas(), gradOutputSize, &scale, gradInput->Cuda(), 1));
 
 	#if (DEBUG_SOFTMAX & 0x02)
-		std::cout << name_ << "[BACKWARD]" << std::endl;
-		input->Print( name_ + "::input", true);
-		output->Print(name_ + "::predict", true);
-		target->Print( name_ + "::y", true, target->num);
-		gradInput->Print(name_ + "::dx", true, target->num);
+		std::cout << layerName << "[BACKWARD]" << std::endl;
+		input->Print( layerName + "::input", true);
+		output->Print(layerName + "::predict", true);
+		target->Print( layerName + "::y", true, target->num);
+		gradInput->Print(layerName + "::dx", true, target->num);
 	#endif
 
 		return gradInput;
@@ -535,7 +565,7 @@ namespace CUDA_NETWORK
 																												padding(padding),
 																												dilation(dilation)
 	{
-		name = name;
+		layerName = name;
 
 		// create cudnn container handles
 		cudnnCreateFilterDescriptor(&filterDesc);
@@ -568,7 +598,7 @@ namespace CUDA_NETWORK
 	#if CUDNN_MAJOR >= 8
 		int algoMaxCount;
 		CheckCudnnErrors(cudnnGetConvolutionForwardAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
-		std::cout << this->name << ": Available Algorithm Count [FWD]: " << algoMaxCount << std::endl;
+		std::cout << this->layerName << ": Available Algorithm Count [FWD]: " << algoMaxCount << std::endl;
 		CheckCudnnErrors(cudnnGetConvolutionForwardAlgorithm_v7(cuda->Cudnn(), inputDesc, filterDesc, convDesc, outputDesc, algoMaxCount, 0, fwdAlgoPerfResults));
 		convFwdAlgo = fwdAlgoPerfResults[0].algo;
 	#else
@@ -580,7 +610,7 @@ namespace CUDA_NETWORK
 		// bwd - filter
 	#if CUDNN_MAJOR >= 8
 		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
-		std::cout << this->name << ": Available Algorithm Count [BWD-filter]: " << algoMaxCount << std::endl;
+		std::cout << this->layerName << ": Available Algorithm Count [BWD-filter]: " << algoMaxCount << std::endl;
 		CheckCudnnErrors(cudnnGetConvolutionBackwardFilterAlgorithm_v7(cuda->Cudnn(), inputDesc, outputDesc, convDesc, filterDesc, algoMaxCount, 0, bwdFilterAlgoPerfResults));
 		convBwdFilterAlgo = bwdFilterAlgoPerfResults[0].algo;
 	#else
@@ -594,7 +624,7 @@ namespace CUDA_NETWORK
 		// bwd - data
 	#if CUDNN_MAJOR >= 8
 		CheckCudnnErrors(cudnnGetConvolutionBackwardDataAlgorithmMaxCount(cuda->Cudnn(), &algoMaxCount));
-		std::cout << this->name << ": Available Algorithm Count [BWD-data]: " << algoMaxCount << std::endl;
+		std::cout << this->layerName << ": Available Algorithm Count [BWD-data]: " << algoMaxCount << std::endl;
 		CheckCudnnErrors(cudnnGetConvolutionBackwardDataAlgorithm_v7(cuda->Cudnn(), filterDesc, outputDesc, convDesc, inputDesc, algoMaxCount, 0, bwdDataAlgoPerfResults));
 		convBwdDataAlgo = bwdDataAlgoPerfResults[0].algo;
 	#else
@@ -629,6 +659,8 @@ namespace CUDA_NETWORK
 			input = input;
 			inputDesc = input->Tensor();
 			batchSize  = input->num;
+
+			printf("batchSize = %d, Size 0 = %d, Size 1 = %d, Size 2 = %d, Size 3 = %d\n", batchSize, outputSize[0], outputSize[1], outputSize[2], outputSize[3]);
 
 			// initilaize output
 			CheckCudnnErrors(cudnnGetConvolution2dForwardOutputDim(convDesc, inputDesc, filterDesc, &outputSize[0], &outputSize[1], &outputSize[2], &outputSize[3]));
@@ -672,10 +704,10 @@ namespace CUDA_NETWORK
 			&cuda->one, outputDesc, output->Cuda()));
 
 	#if (DEBUG_CONV & 0x01)
-		input->Print(name + "::input", true, input->num, 28);
-		weights->Print(name + "::weight", true);
-		biases->Print(name + "::bias", true);
-		output->Print(name + "::output", true);
+		input->Print(layerName + "::input", true, input->num, 28);
+		weights->Print(layerName + "::weight", true);
+		biases->Print(layerName + "::bias", true);
+		output->Print(layerName + "::output", true);
 	#endif
 
 		return output;
@@ -721,17 +753,17 @@ namespace CUDA_NETWORK
 					inputDesc, gradInput->Cuda()));
 
 	#if (DEBUG_CONV & 0x02)
-		std::cout << name << "[BACKWARD]" << std::endl;
-		gradOutput->Print(name + "::gradients", true);
-		gradBiases->Print(name + "gbias", true);
-		gradWeights->Print(name + "gfilter", true);
+		std::cout << layerName << "[BACKWARD]" << std::endl;
+		gradOutput->Print(layerName + "::gradients", true);
+		gradBiases->Print(layerName + "gbias", true);
+		gradWeights->Print(layerName + "gfilter", true);
 		if (!gradientStop)
-			gradInput->Print(name +"gdata", true);
+			gradInput->Print(layerName +"gdata", true);
 	#endif
 
 	#if (DEBUG_CONV & 0x04)
-		gradOutput->Print( name_ + "::gradients", true);
-		gradBiases->Print( name_ + "::gbias", true);
+		gradOutput->Print(layerName + "::gradients", true);
+		gradBiases->Print(layerName + "::gbias", true);
 	#endif
 
 		return gradInput;
@@ -740,14 +772,14 @@ namespace CUDA_NETWORK
 	/****************************************************************
  	 * Layer definition                                             *
  	****************************************************************/
-	Pooling::Pooling(std::string name, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode) :  kernelSize(kernelSize),
-																											padding(padding),
-																											stride(stride),
-																											mode(mode)
+	Pooling::Pooling(std::string name, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode) :  poolKernelSize(kernelSize),
+																											poolPadding(padding),
+																											poolStride(stride),
+																											poolMode(mode)
 	{
-		name = name;
+		layerName = name;
 		cudnnCreatePoolingDescriptor(&poolDesc);
-		cudnnSetPooling2dDescriptor(poolDesc, mode, CUDNN_PROPAGATE_NAN, kernelSize, kernelSize, padding, padding, stride, stride);
+		cudnnSetPooling2dDescriptor(poolDesc, poolMode, CUDNN_PROPAGATE_NAN, poolKernelSize, poolKernelSize, poolPadding, poolPadding, poolStride, poolStride);
 	}
 
 	Pooling::~Pooling()

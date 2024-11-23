@@ -16,7 +16,7 @@ namespace CUDA_NETWORK
             virtual Blob<float> *Forward(Blob<float> *input) = 0;
             virtual Blob<float> *Backward(Blob<float> *gradInput) = 0;
 
-            std::string getName();
+            std::string GetName();
 
             virtual float GetLoss(Blob<float> *target);
             virtual int   GetAccuracy(Blob<float> *target);
@@ -32,7 +32,7 @@ namespace CUDA_NETWORK
 
         protected:
             // name of layer
-            std::string name;
+            std::string layerName;
 
             // tensor descriptor for the input/output tensors
             cudnnTensorDescriptor_t inputDesc;
@@ -102,8 +102,8 @@ namespace CUDA_NETWORK
 
         private:
             cudnnActivationDescriptor_t actDesc;
-            cudnnActivationMode_t mode;
-            float coef;
+            cudnnActivationMode_t actMode;
+            float actCoef;
     };
 
     class Softmax: public Layer
@@ -162,10 +162,10 @@ namespace CUDA_NETWORK
             Blob<float> *Backward(Blob<float> *gradOutput);
 
         private:
-            int kernelSize;
-            int padding;
-            int stride;
-            cudnnPoolingMode_t mode;
+            int poolKernelSize;
+            int poolPadding;
+            int poolStride;
+            cudnnPoolingMode_t poolMode;
 
             std::array<int, 4> outputSize;
             cudnnPoolingDescriptor_t poolDesc;
