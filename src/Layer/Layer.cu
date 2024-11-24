@@ -29,37 +29,37 @@ namespace CUDA_NETWORK
 	    std::cout << "Destroy Layer: " << layerName << std::endl;
     #endif
 
-        if(output       != nullptr)  delete output;
-	    if(gradInput    != nullptr)  delete gradInput;
+        if(output_       != nullptr)  delete output_;
+	    if(gradInput_    != nullptr)  delete gradInput_;
 
-	    if(weights      != nullptr)  delete weights;
-	    if(biases       != nullptr)  delete biases;
-	    if(gradWeights  != nullptr)  delete gradWeights;
-	    if(gradBiases   != nullptr)  delete gradBiases;
+	    if(weights_      != nullptr)  delete weights_;
+	    if(biases_       != nullptr)  delete biases_;
+	    if(gradWeights_  != nullptr)  delete gradWeights_;
+	    if(gradBiases_   != nullptr)  delete gradBiases_;
     }
 
     void Layer::InitWeightBias(unsigned int seed)
     {
 	    CheckCudaErrors(cudaDeviceSynchronize());
 
-        if(weights == nullptr || biases == nullptr) return;
+        if(weights_ == nullptr || biases_ == nullptr) return;
 
 	    // Create random network
 	    std::random_device rd;
 	    std::mt19937 gen(seed == 0 ? rd() : static_cast<unsigned int>(seed));
 
 	    // He uniform distribution
-	    float range = sqrt(6.f / input->Size());	// He's initialization
+	    float range = sqrt(6.f / input_->Size());	// He's initialization
 	    std::uniform_real_distribution<> dis(-range, range);
 
-	    for(int i = 0; i < weights->Length(); i++)
-		    weights->Ptr()[i] = static_cast<float>(dis(gen));
-	    for(int i = 0; i < biases->Length(); i++)
-		    biases->Ptr()[i] = 0.f;
+	    for(int i = 0; i < weights_->Length(); i++)
+		    weights_->Ptr()[i] = static_cast<float>(dis(gen));
+	    for(int i = 0; i < biases_->Length(); i++)
+		    biases_->Ptr()[i] = 0.f;
 
 	    // copy initialized value to the device
-	    weights->To(DEV_TYPE::CUDA);
-	    biases->To(DEV_TYPE::CUDA);
+	    weights_->To(DEV_TYPE::CUDA);
+	    biases_->To(DEV_TYPE::CUDA);
 
 	    std::cout << ".. initialized " << layerName << " layer .." << std::endl;
     }
@@ -68,16 +68,16 @@ namespace CUDA_NETWORK
     {
 	    float eps = -1.f * learningRate;
 
-	    if(weights != nullptr && gradWeights != nullptr)
+	    if(weights_ != nullptr && gradWeights_ != nullptr)
 	    {
 
         #if(DEBUG_UPDATE)
-		    weights->print(layerName + "::weights (before update)", true);
-		    gradWeights->print(layerName + "::gweights", true);
+		    weights_->print(layerName + "::weights (before update)", true);
+		    gradWeights_->print(layerName + "::gweights", true);
         #endif // DEBUG_UPDATE
 
 		// w = w + eps * dw
-		    CheckCublasErrors(cublasSaxpy(cuda->Cublas(), weights->Length(), &eps, gradWeights->Cuda(), 1, weights->Cuda(), 1));
+		    CheckCublasErrors(cublasSaxpy(cuda->Cublas(), weights_->Length(), &eps, gradWeights_->Cuda(), 1, weights_->Cuda(), 1));
 
         #if(DEBUG_UPDATE)
 		    weights->print(layerName + "weights (after update)", true);
@@ -85,19 +85,19 @@ namespace CUDA_NETWORK
         #endif // DEBUG_UPDATE
 	    }
 
-	    if(biases != nullptr && gradBiases != nullptr)
+	    if(biases_ != nullptr && gradBiases_ != nullptr)
 	    {
 
         #if(DEBUG_UPDATE)
-		    biases->print(layerName + "biases (before update)", true);
-		    gradBiases->print(layerName + "gbiases", true);
+		    biases_->print(layerName + "biases (before update)", true);
+		    gradBiases_->print(layerName + "gbiases", true);
         #endif // DEBUG_UPDATE
 
 		// b = b + eps * db
-		CheckCublasErrors(cublasSaxpy(cuda->Cublas(), biases->Length(), &eps, gradBiases->Cuda(), 1, biases->Cuda(), 1));
+		CheckCublasErrors(cublasSaxpy(cuda->Cublas(), biases_->Length(), &eps, gradBiases_->Cuda(), 1, biases_->Cuda(), 1));
 
         #if (DEBUG_UPDATE)
-		    biases->print(layerName + "biases (after update)", true);
+		    biases_->print(layerName + "biases (after update)", true);
 		    // getchar();
         #endif // DEBUG_UPDATE
 	    }
@@ -121,10 +121,10 @@ namespace CUDA_NETWORK
 
 	    // load weights and biases pretrained parameters
 	    filenameWeights << layerName << ".bin";
-	    if(weights->FileRead(filenameWeights.str())) return -1;
+	    if(weights_->FileRead(filenameWeights.str())) return -1;
 
 	    filenameBiases << layerName << ".bias.bin";
-	    if(biases->FileRead(filenameBiases.str())) return -2;
+	    if(biases_->FileRead(filenameBiases.str())) return -2;
 
 	    std::cout << ".. loaded " << layerName << " pretrain parameter.." << std::endl;
 
@@ -138,17 +138,17 @@ namespace CUDA_NETWORK
 	    std::cout << ".. saving " << layerName << " parameter ..";
 	
 	    // Write weights file
-	    if(weights)
+	    if(weights_)
 	    {
 		    filenameWeights << layerName << ".bin";
-		    if(weights->FileWrite(filenameWeights.str())) return -1;
+		    if(weights_->FileWrite(filenameWeights.str())) return -1;
 	    }
 	
 	    // Write bias file
-	    if(biases)
+	    if(biases_)
 	    {
 		    filenameBiases << layerName << ".bias.bin";
-		    if(biases->FileWrite(filenameBiases.str())) return -2;
+		    if(biases_->FileWrite(filenameBiases.str())) return -2;
 	    }
 
 	    std::cout << " done .." << std::endl;
@@ -178,12 +178,12 @@ namespace CUDA_NETWORK
 
     void Layer::Freeze()
 	{
-		freeze = true;
+		freeze_ = true;
 	}
     
 	void Layer::UnFreeze()
 	{
-		freeze = false;
+		freeze_ = false;
 	}
 
     /****************************************************************
@@ -213,36 +213,36 @@ namespace CUDA_NETWORK
 	Blob<float> *Dense::Forward(Blob<float> *input)
 	{
 		// initialize weights and biases
-		if(weights == nullptr)
+		if(weights_ == nullptr)
 		{
 			// setup parameter size information
 			inputSize  = input->channel * input->height * input->width;
 		
 			// initialize weight, bias, and output
-			weights = new Blob<float>(1, 1, inputSize, outputSize);
-			biases  = new Blob<float>(1, 1, outputSize);
+			weights_ = new Blob<float>(1, 1, inputSize, outputSize);
+			biases_  = new Blob<float>(1, 1, outputSize);
 		}
 
 		// initilaize input and output
-		if(input == nullptr || batchSize != input->num)
+		if(input_ == nullptr || batchSize_ != input_->num)
 		{
-			input = input;
-			batchSize  = input->num;
+			input_ = input;
+			batchSize_  = input->num;
 
-			if(output == nullptr)
-				output  = new Blob<float>(batchSize, outputSize);
+			if(output_ == nullptr)
+				output_  = new Blob<float>(batchSize_, outputSize);
 			else
-				output->Reset(batchSize, outputSize);
+				output_->Reset(batchSize_, outputSize);
 		
-			output->Tensor();
+			output_->Tensor();
 
 			if(dOneVec != nullptr) cudaFree(dOneVec);
 
-			CheckCudaErrors(cudaMalloc((void**)&dOneVec, sizeof(float) * batchSize));
-			InitOneVec<<<(batchSize + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D >>>(dOneVec, batchSize);
+			CheckCudaErrors(cudaMalloc((void**)&dOneVec, sizeof(float) * batchSize_));
+			InitOneVec<<<(batchSize_ + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D >>>(dOneVec, batchSize_);
 
 			// initialize weights and biases
-			if(loadPretrain && !freeze)
+			if(loadPretrain && !freeze_)
 			{
 				if(LoadParameter())
 				{
@@ -250,7 +250,7 @@ namespace CUDA_NETWORK
 					exit(-1);
 				}
 			}
-			else if(!freeze)
+			else if(!freeze_)
 			{
 				InitWeightBias();
 			}
@@ -265,23 +265,23 @@ namespace CUDA_NETWORK
 		CheckCublasErrors(
 			cublasSgemm(cuda->Cublas(),
 				CUBLAS_OP_T, CUBLAS_OP_N, 
-				outputSize, batchSize, inputSize,
+				outputSize, batchSize_, inputSize,
 				&cuda->one,  
-				weights->Cuda(), inputSize, 
-				input->Cuda(), inputSize,
+				weights_->Cuda(), inputSize, 
+				input_->Cuda(), inputSize,
 				&cuda->zero, 
-				output->Cuda(),  outputSize));
+				output_->Cuda(),  outputSize));
 
 		// output += biases * dOneVec ^ T
 		CheckCublasErrors(
 			cublasSgemm(cuda->Cublas(),
 				CUBLAS_OP_N, CUBLAS_OP_N, 
-				outputSize, batchSize, 1,
+				outputSize, batchSize_, 1,
 				&cuda->one, 
-				biases->Cuda(), outputSize, 
+				biases_->Cuda(), outputSize, 
 				dOneVec, 1, 
 				&cuda->one, 
-				output->Cuda(), outputSize));
+				output_->Cuda(), outputSize));
 
 	#if (DEBUG_DENSE & 0x01)
 		input->Print(layerName + "::input",  true);
@@ -290,57 +290,57 @@ namespace CUDA_NETWORK
 		output->Print(layerName + "::output", true);
 	#endif // DEBUG_DENSE
 
-		return output;
+		return output_;
 	}
 
 	Blob<float> *Dense::Backward(Blob<float> *gradOutput)
 	{
-		if(gradWeights == nullptr)
+		if(gradWeights_ == nullptr)
 		{
-			gradWeights = new Blob<float>(weights->Shape());
-			gradBiases  = new Blob<float>(biases->Shape());
+			gradWeights_ = new Blob<float>(weights_->Shape());
+			gradBiases_  = new Blob<float>(biases_->Shape());
 		}
 
-		if(gradInput == nullptr || batchSize != gradOutput->num)
+		if(gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
-			gradOutput  = gradOutput;
+			gradOutput_ = gradOutput;
 
-			if (gradInput == nullptr)
-				gradInput   = new Blob<float>(input->Shape());
+			if (gradInput_ == nullptr)
+				gradInput_   = new Blob<float>(input_->Shape());
 			else
-				gradInput->Reset(input->Shape());
+				gradInput_->Reset(input_->Shape());
 		}
 
 		// db = (dy) * d_one_vec
 		cublasSgemv(cuda->Cublas(),
 				CUBLAS_OP_N,
-				outputSize, batchSize,
+				outputSize, batchSize_,
 				&cuda->one,
 				gradOutput->Cuda(), outputSize,
 				dOneVec, 1,
 				&cuda->zero,
-				gradBiases->Cuda(), 1);
+				gradBiases_->Cuda(), 1);
 
 		// dw = x * (dy)^T
 		cublasSgemm(cuda->Cublas(),
 			CUBLAS_OP_N, CUBLAS_OP_T,
-			inputSize, outputSize, batchSize,
+			inputSize, outputSize, batchSize_,
 			&cuda->one,
-			input->Cuda(),        inputSize,
+			input_->Cuda(),        inputSize,
 			gradOutput->Cuda(),   outputSize,
 			&cuda->zero,
-			gradWeights->Cuda(),  inputSize);
+			gradWeights_->Cuda(),  inputSize);
 
 		// dx = W * dy
 		if (!gradientStop)
 			cublasSgemm(cuda->Cublas(),
 				CUBLAS_OP_N, CUBLAS_OP_N,
-				inputSize, batchSize, outputSize,
+				inputSize, batchSize_, outputSize,
 				&cuda->one,
-				weights->Cuda(),    inputSize,
+				weights_->Cuda(),    inputSize,
 				gradOutput->Cuda(), outputSize,
 				&cuda->zero, 
-				gradInput->Cuda(),  inputSize);
+				gradInput_->Cuda(),  inputSize);
 
 	#if (DEBUG_DENSE & 0x02)
 		std::cout << layerName << "[BACKWARD]" << std::endl;
@@ -350,7 +350,7 @@ namespace CUDA_NETWORK
 		if(!gradientStop) gradInput->Print(layerName + "::gdata", true);
 	#endif // DEBUG_DENSE
 
-		return gradInput;
+		return gradInput_;
 	}
 
 	/****************************************************************
@@ -374,54 +374,54 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Activation::Forward(Blob<float> *input)
 	{
-		if(input == nullptr || batchSize != input->num)
+		if(input == nullptr || batchSize_ != input->num)
 		{
-			input = input;
-			inputDesc = input->Tensor();
-			batchSize = input->num;
+			input_ = input;
+			inputDesc = input_->Tensor();
+			batchSize_ = input_->num;
 
-			if(output == nullptr)
-				output = new Blob<float>(input->Shape());
+			if(output_ == nullptr)
+				output_ = new Blob<float>(input_->Shape());
 			else
-				output->Reset(input->Shape());
+				output_->Reset(input_->Shape());
 
-			outputDesc = output->Tensor();
+			outputDesc = output_->Tensor();
 		}
 
 		cudnnActivationForward(cuda->Cudnn(),
 			actDesc,
 			&cuda->one,
 			inputDesc,
-			input->Cuda(),
+			input_->Cuda(),
 			&cuda->zero,
 			outputDesc,
-			output->Cuda());
+			output_->Cuda());
 
-		return output;
+		return output_;
 	}
 
 	Blob<float> *Activation::Backward(Blob<float> *gradOutput)
 	{
-		if (gradInput == nullptr || batchSize != gradOutput->num)
+		if (gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
 			gradOutput = gradOutput;
 
-			if (gradInput == nullptr)
-				gradInput = new Blob<float>(input->Shape());
+			if (gradInput_ == nullptr)
+				gradInput_ = new Blob<float>(input_->Shape());
 			else
-				gradInput->Reset(input->Shape());		
+				gradInput_->Reset(input_->Shape());		
 		}
 
 		cudnnActivationBackward(cuda->Cudnn(),
 			actDesc,
 			&cuda->one, 
-			outputDesc, output->Cuda(),
+			outputDesc, output_->Cuda(),
 			outputDesc, gradOutput->Cuda(), 
-			inputDesc, input->Cuda(), 
+			inputDesc, input_->Cuda(), 
 			&cuda->zero, 
-			inputDesc, gradInput->Cuda());
+			inputDesc, gradInput_->Cuda());
 
-		return gradInput;
+		return gradInput_;
 	}
 
 	/****************************************************************
@@ -440,85 +440,85 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Softmax::Forward(Blob<float> *input)
 	{
-		if(input == nullptr || batchSize != input->num)
+		if(input == nullptr || batchSize_ != input->num)
 		{
-			input = input;
-			inputDesc = input->Tensor();
-			batchSize = input->num;
+			input_ = input;
+			inputDesc = input_->Tensor();
+			batchSize_ = input_->num;
 		
-			if(output == nullptr)
-				output = new Blob<float>(input->Shape());
+			if(output_ == nullptr)
+				output_ = new Blob<float>(input_->Shape());
 			else
-				output->Reset(input->Shape());		
+				output_->Reset(input_->Shape());		
 
-			outputDesc = output->Tensor();
+			outputDesc = output_->Tensor();
 		}
 
 	#if (DEBUG_SOFTMAX & 0x01)
 		std::cout << layerName << "[FORWARD]" << std::endl;
-		input->Print(layerName + "::input", true, input->num);
+		input_->Print(layerName + "::input", true, input_->num);
 	#endif
 
 		CheckCudnnErrors(
 			cudnnSoftmaxForward(cuda->Cudnn(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-				&cuda->one,  inputDesc,  input->Cuda(),
-				&cuda->zero, outputDesc, output->Cuda()));
+				&cuda->one,  inputDesc,  input_->Cuda(),
+				&cuda->zero, outputDesc, output_->Cuda()));
 
 	#if (DEBUG_SOFTMAX & 0x01)
-		output->Print(layerName + "::output", true, input->num);
+		output_->Print(layerName + "::output", true, input_->num);
 	#endif
 
-		return output;
+		return output_;
 	}
 
 	Blob<float> *Softmax::Backward(Blob<float> *target)
 	{
 		CheckCudaErrors(cudaDeviceSynchronize());
 
-		if(gradInput == nullptr || batchSize != target->num)
+		if(gradInput_ == nullptr || batchSize_ != target->num)
 		{
-			if (gradInput == nullptr)
-				gradInput = new Blob<float>(input->Shape());
+			if (gradInput_ == nullptr)
+				gradInput_ = new Blob<float>(input_->Shape());
 			else
-		 		gradInput->Reset(input->Shape());
+		 		gradInput_->Reset(input_->Shape());
 		}
 
 		// set grad_input_ as predict
-		CheckCudaErrors(cudaMemcpyAsync(gradInput->Cuda(), 
-			output->Cuda(), output->BufSize(), 
+		CheckCudaErrors(cudaMemcpyAsync(gradInput_->Cuda(), 
+			output_->Cuda(), output_->BufSize(), 
 			cudaMemcpyDeviceToDevice));
 
 		// set gradInput = predict - target	
 		CheckCublasErrors(
 			cublasSaxpy(cuda->Cublas(), target->Length(),
 				&cuda->minusOne, target->Cuda(), 1,
-				gradInput->Cuda(), 1));
+				gradInput_->Cuda(), 1));
 
 		// normalize the grad_output by the batch size
 		int gradOutputSize = target->num * target->channel * target->height * target->width;
 		float scale = 1.f / static_cast<float>(target->num);
-		CheckCublasErrors(cublasSscal(cuda->Cublas(), gradOutputSize, &scale, gradInput->Cuda(), 1));
+		CheckCublasErrors(cublasSscal(cuda->Cublas(), gradOutputSize, &scale, gradInput_->Cuda(), 1));
 
 	#if (DEBUG_SOFTMAX & 0x02)
 		std::cout << layerName << "[BACKWARD]" << std::endl;
-		input->Print( layerName + "::input", true);
-		output->Print(layerName + "::predict", true);
+		input_->Print( layerName + "::input", true);
+		output_->Print(layerName + "::predict", true);
 		target->Print( layerName + "::y", true, target->num);
-		gradInput->Print(layerName + "::dx", true, target->num);
+		gradInput_->Print(layerName + "::dx", true, target->num);
 	#endif
 
-		return gradInput;
+		return gradInput_;
 	}
 
-	float Softmax::getLoss(Blob<float> *target)
+	float Softmax::GetLoss(Blob<float> *target)
 	{
-		return loss.Loss(output, target);
+		return loss.Loss(output_, target);
 	}
 
-	int Softmax::getAccuracy(Blob<float> *target)
+	int Softmax::GetAccuracy(Blob<float> *target)
 	{
-		int batchSize = output->num;
-		int outputSize = output->Size();
+		int batchSize = output_->num;
+		int outputSize = output_->Size();
 
 		assert(batchSize == target->num);
 		assert(outputSize == target->Size());
@@ -528,7 +528,7 @@ namespace CUDA_NETWORK
 		int hitCount = 0;
 
 		// get predicts and targets
-		hOutput = output->To(HOST);
+		hOutput = output_->To(HOST);
 		hTarget = target->To(HOST);
 
 		// idxOutput = idxTarget = 0;
@@ -643,40 +643,38 @@ namespace CUDA_NETWORK
 	Blob<float> *Conv2D::Forward(Blob<float> *input)
 	{
 		// initialize weights and bias
-		if(weights == nullptr)
+		if(weights_ == nullptr)
 		{
 			// initialize containers handles
 			CheckCudnnErrors(cudnnSetFilter4dDescriptor(filterDesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, outChannels, input->channel, kernelSize, kernelSize));
-			weights = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
-			biases  = new Blob<float>(1, outChannels);	// bias size
-			biasDesc = biases->Tensor();
+			weights_ = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
+			biases_  = new Blob<float>(1, outChannels);	// bias size
+			biasDesc = biases_->Tensor();
 		}
  
 		// initilaize input and output
-		if(input == nullptr || batchSize != input->num)
+		if(input == nullptr || batchSize_ != input->num)
 		{
 			// initialize input
-			input = input;
-			inputDesc = input->Tensor();
-			batchSize  = input->num;
-
-			printf("batchSize = %d, Size 0 = %d, Size 1 = %d, Size 2 = %d, Size 3 = %d\n", batchSize, outputSize[0], outputSize[1], outputSize[2], outputSize[3]);
+			input_ = input;
+			inputDesc = input_->Tensor();
+			batchSize_  = input_->num;
 
 			// initilaize output
 			CheckCudnnErrors(cudnnGetConvolution2dForwardOutputDim(convDesc, inputDesc, filterDesc, &outputSize[0], &outputSize[1], &outputSize[2], &outputSize[3]));
 
-			if (output == nullptr)
-				output  = new Blob<float>(outputSize);
+			if (output_ == nullptr)
+				output_  = new Blob<float>(outputSize);
 			else
-				output->Reset(outputSize);
+				output_->Reset(outputSize);
 
-			outputDesc = output->Tensor();
+			outputDesc = output_->Tensor();
 
 			// initialize workspace for cudnn
 			SetWorkspace();
 
 			// initialize weights
-			if(loadPretrain && !freeze)
+			if(loadPretrain && !freeze_)
 			{
 				if(LoadParameter())
 				{
@@ -684,7 +682,7 @@ namespace CUDA_NETWORK
 					exit(-1);
 				}
 			}
-			else if (!freeze)
+			else if (!freeze_)
 			{
 				InitWeightBias();
 			}
@@ -695,78 +693,78 @@ namespace CUDA_NETWORK
 		}
 
 		CheckCudnnErrors(cudnnConvolutionForward(cuda->Cudnn(),
-			&cuda->one,  inputDesc,  input->Cuda(),
-			filterDesc, weights->Cuda(), convDesc, convFwdAlgo, dWorkspace,  workspaceSize,
-			&cuda->zero, outputDesc, output->Cuda()));
+			&cuda->one,  inputDesc,  input_->Cuda(),
+			filterDesc, weights_->Cuda(), convDesc, convFwdAlgo, dWorkspace,  workspaceSize,
+			&cuda->zero, outputDesc, output_->Cuda()));
 
 		CheckCudnnErrors(cudnnAddTensor(cuda->Cudnn(), 
-			&cuda->one, biasDesc, biases->Cuda(), 
-			&cuda->one, outputDesc, output->Cuda()));
+			&cuda->one, biasDesc, biases_->Cuda(), 
+			&cuda->one, outputDesc, output_->Cuda()));
 
 	#if (DEBUG_CONV & 0x01)
-		input->Print(layerName + "::input", true, input->num, 28);
-		weights->Print(layerName + "::weight", true);
-		biases->Print(layerName + "::bias", true);
-		output->Print(layerName + "::output", true);
+		input_->Print(layerName + "::input", true, input->num, 28);
+		weights_->Print(layerName + "::weight", true);
+		biases_->Print(layerName + "::bias", true);
+		output_->Print(layerName + "::output", true);
 	#endif
 
-		return output;
+		return output_;
 	}
 
 	Blob<float> *Conv2D::Backward(Blob<float> *gradOutput)
 	{
 		// initialize gradOutput back-propagation space
-		if(gradInput == nullptr || batchSize != gradOutput->num)
+		if(gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
-			gradOutput  = gradOutput;
-			gradWeights = new Blob<float>(weights->Shape());
-			gradBiases  = new Blob<float>(1, biases->channel);
+			gradOutput_  = gradOutput;
+			gradWeights_ = new Blob<float>(weights_->Shape());
+			gradBiases_  = new Blob<float>(1, biases_->channel);
 
-			if(gradInput == nullptr)
-				gradInput = new Blob<float>(input->Shape());
+			if(gradInput_ == nullptr)
+				gradInput_ = new Blob<float>(input_->Shape());
 			else
-				gradInput->Reset(input->Shape());
+				gradInput_->Reset(input_->Shape());
 		}
 
 		// gradients of biases
-		CheckCudnnErrors(cudnnConvolutionBackwardBias(cuda->Cudnn(), &cuda->one, outputDesc, gradOutput->Cuda(), &cuda->zero, biasDesc, gradBiases->Cuda()));
+		CheckCudnnErrors(cudnnConvolutionBackwardBias(cuda->Cudnn(), &cuda->one, outputDesc, gradOutput_->Cuda(), &cuda->zero, biasDesc, gradBiases_->Cuda()));
 	
 		// gradients of weights 
 		CheckCudnnErrors(
 			cudnnConvolutionBackwardFilter(cuda->Cudnn(),
 				&cuda->one, 
-				inputDesc, input->Cuda(), 
-				outputDesc, gradOutput->Cuda(),
+				inputDesc, input_->Cuda(), 
+				outputDesc, gradOutput_->Cuda(),
 				convDesc, convBwdFilterAlgo, dWorkspace, workspaceSize,
 				&cuda->zero, 
-				filterDesc, gradWeights->Cuda()));
+				filterDesc, gradWeights_->Cuda()));
 
 		// gradients of input data
 		if (!gradientStop)
 			CheckCudnnErrors(
 				cudnnConvolutionBackwardData(cuda->Cudnn(),
 					&cuda->one, 
-					filterDesc, weights->Cuda(), 
-					outputDesc, gradOutput->Cuda(), 
+					filterDesc, weights_->Cuda(), 
+					outputDesc, gradOutput_->Cuda(), 
 					convDesc, convBwdDataAlgo, dWorkspace, workspaceSize,
 					&cuda->zero, 
-					inputDesc, gradInput->Cuda()));
+					inputDesc, gradInput_->Cuda()));
 
 	#if (DEBUG_CONV & 0x02)
 		std::cout << layerName << "[BACKWARD]" << std::endl;
-		gradOutput->Print(layerName + "::gradients", true);
-		gradBiases->Print(layerName + "gbias", true);
-		gradWeights->Print(layerName + "gfilter", true);
+		gradOutput_->Print(layerName + "::gradients", true);
+		gradBiases_->Print(layerName + "gbias", true);
+		gradWeights_->Print(layerName + "gfilter", true);
 		if (!gradientStop)
-			gradInput->Print(layerName +"gdata", true);
+			gradInput_->Print(layerName +"gdata", true);
 	#endif
 
 	#if (DEBUG_CONV & 0x04)
-		gradOutput->Print(layerName + "::gradients", true);
-		gradBiases->Print(layerName + "::gbias", true);
+		gradOutput_->Print(layerName + "::gradients", true);
+		gradBiases_->Print(layerName + "::gbias", true);
 	#endif
 
-		return gradInput;
+		return gradInput_;
 	}
 
 	/****************************************************************
@@ -789,52 +787,52 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Pooling::Forward(Blob<float> *input)
 	{
-		if(input == nullptr || batchSize != input->num)
+		if(input == nullptr || batchSize_ != input->num)
 		{
-			input = input;
+			input_ = input;
 
 			// resource initialize
 			inputDesc = input->Tensor();
-			batchSize = input->num;
+			batchSize_ = input->num;
 		
 			// setting output
 			cudnnGetPooling2dForwardOutputDim(poolDesc, inputDesc, &outputSize[0], &outputSize[1], &outputSize[2], &outputSize[3]);
-			if(output == nullptr)
-				output = new Blob<float>(outputSize);
+			if(output_ == nullptr)
+				output_ = new Blob<float>(outputSize);
 			else
-				output->Reset(outputSize);
+				output_->Reset(outputSize);
 		
-			outputDesc = output->Tensor();
+			outputDesc = output_->Tensor();
 		}
 
 		cudnnPoolingForward(cuda->Cudnn(), poolDesc,
 			&cuda->one,   inputDesc,  input->Cuda(),
-			&cuda->zero,  outputDesc, output->Cuda());
+			&cuda->zero,  outputDesc, output_->Cuda());
 
-		return output;
+		return output_;
 	}
 
 	Blob<float> *Pooling::Backward(Blob<float> *gradOutput)
 	{
-		if (gradInput == nullptr || batchSize != gradOutput->num)
+		if (gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
-			gradOutput = gradOutput;
+			gradOutput_ = gradOutput;
 
-			if (gradInput == nullptr)
-				gradInput = new Blob<float>(input->Shape());
+			if (gradInput_ == nullptr)
+				gradInput_ = new Blob<float>(input_->Shape());
 			else
-				gradInput->Reset(input->Shape());
+				gradInput_->Reset(input_->Shape());
 		}
 
 		CheckCudnnErrors(
 			cudnnPoolingBackward(cuda->Cudnn(), poolDesc,
 				&cuda->one,  
-				outputDesc, output->Cuda(),
-				outputDesc, gradOutput->Cuda(), 
-				inputDesc,  input->Cuda(), 
+				outputDesc, output_->Cuda(),
+				outputDesc, gradOutput_->Cuda(), 
+				inputDesc,  input_->Cuda(), 
 				&cuda->zero, 
-				inputDesc,  gradInput->Cuda()));
+				inputDesc,  gradInput_->Cuda()));
 
-		return gradInput;
+		return gradInput_;
 	}
 }

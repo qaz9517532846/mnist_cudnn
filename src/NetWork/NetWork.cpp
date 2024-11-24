@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <nvtx3/nvToolsExt.h>
 
+#define DEBUG_FORWARD 0
+
 namespace CUDA_NETWORK
 {
     Network::Network()
@@ -42,12 +44,11 @@ namespace CUDA_NETWORK
 		#if (DEBUG_FORWARD)
 		    std::cout << "[[Forward ]][[ " << std::setw(7) << layer->GetName() << " ]]\t(" << output->num << ", " << output->channel << ", " << output->height << ", " << output->width << ")\t";
 		#endif // DEBUG_FORWARD
-
 		    output = layer->Forward(output);
 
 		#if (DEBUG_FORWARD)
 		    std::cout << "--> (" << output->num << ", " << output->channel << ", " << output->height << ", " << output->width << ")" << std::endl;
-		    checkCudaErrors(cudaDeviceSynchronize());
+		    CheckCudaErrors(cudaDeviceSynchronize());
 
 		#if (DEBUG_FORWARD > 1)
 			output->Print("output", true);
@@ -109,8 +110,8 @@ namespace CUDA_NETWORK
 	    for(auto layer : layersVect)
 	    {
 		    // if no parameters, then pass
-		    if (layer->weights == nullptr || layer->gradWeights == nullptr ||
-			    layer->biases == nullptr || layer->gradBiases == nullptr)
+		    if (layer->weights_ == nullptr || layer->gradWeights_ == nullptr ||
+			    layer->biases_ == nullptr || layer->gradBiases_ == nullptr)
 			    continue;
 
 		    layer->UpdateWeightsBiases(learningRate);

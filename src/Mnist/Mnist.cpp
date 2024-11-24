@@ -23,8 +23,11 @@ namespace CUDA_NETWORK
     {
         // create blobs with batch size and sample size
         data = new Blob<float>(batchSize_, channels_, height_, width_);
+        printf("Data Finished\n");
         data->Tensor();
+        printf("Data Tensor\n");
         target = new Blob<float>(batchSize_, numClasses_);
+        printf("Data target\n");
     }
 
     std::vector<float> MNIST::ImageProcess(std::string imgFile)
@@ -35,7 +38,7 @@ namespace CUDA_NETWORK
         cv::cvtColor(colorImage, grayImage, cv::COLOR_BGR2GRAY);
         cv::resize(grayImage, resizedImage, cv::Size(28, 28));
         height_ = 28;
-        height_ = 28;
+        width_ = 28;
         channels_ = 1;
         cv::normalize(resizedImage, normalizedImage, 0.0, 1.0, cv::NORM_MINMAX, CV_32F);
 
@@ -70,6 +73,7 @@ namespace CUDA_NETWORK
         std::string line, imgFile;
         int label;
         int numData_ = 0;
+        numClasses_ = MNIST_CLASS;
         while (std::getline(file, line))
         {
             std::string imgPath;
@@ -133,14 +137,17 @@ namespace CUDA_NETWORK
         step_ = 0;
     }
     
-    void MNIST::Test()
+    void MNIST::Test(std::string imgFile)
     {
-        std::vector<float> imageRawData = ImageProcess(filePath);
+        batchSize_ = numSteps_ = 1;
+        numClasses_ = MNIST_CLASS;
+        std::vector<float> imageRawData = ImageProcess(imgFile);
         dataPool.push_back(imageRawData);
 
         CreateSharedSpace();
 
         step_ = 0;
+        printf("Test Finished");
     }
 
     void MNIST::GetBatch()
@@ -150,8 +157,6 @@ namespace CUDA_NETWORK
             std::cout << "You must initialize dataset first.." << std::endl;
             exit (-1);
         }
-
-        printf("%d, %d, %d\n", step_, numSteps_, batchSize_);
         
         // index clipping
         int dataIdx = step_ % numSteps_ * batchSize_;

@@ -43,19 +43,19 @@ namespace CUDA_NETWORK
             cudnnTensorDescriptor_t biasDesc;
     
             // output memory
-            Blob<float> *input        = nullptr;    /* x  */
-            Blob<float> *output       = nullptr;    /* y  */
-            Blob<float> *gradInput    = nullptr;    /* dx */
-            Blob<float> *gradOutput   = nullptr;    /* dy */
+            Blob<float> *input_        = nullptr;    /* x  */
+            Blob<float> *output_       = nullptr;    /* y  */
+            Blob<float> *gradInput_    = nullptr;    /* dx */
+            Blob<float> *gradOutput_   = nullptr;    /* dy */
 
             // master weights & bias
-            bool freeze               = false;     /* control parameter updates */
-            Blob<float> *weights      = nullptr;   /* w */
-            Blob<float> *biases       = nullptr;   /* b */
-            Blob<float> *gradWeights  = nullptr;   /* dw */
-            Blob<float> *gradBiases   = nullptr;   /* db */
+            bool freeze_               = false;     /* control parameter updates */
+            Blob<float> *weights_      = nullptr;   /* w */
+            Blob<float> *biases_       = nullptr;   /* b */
+            Blob<float> *gradWeights_  = nullptr;   /* dw */
+            Blob<float> *gradBiases_   = nullptr;   /* db */
 
-            int batchSize = 0;  // mini-batch size
+            int batchSize_ = 0;  // mini-batch size
     
             // initialize weights along with the input size
             void InitWeightBias(unsigned int seed = 0);
@@ -115,8 +115,8 @@ namespace CUDA_NETWORK
             Blob<float> *Forward(Blob<float> *input);
             Blob<float> *Backward(Blob<float> *gradInput);
 
-            float getLoss(Blob<float> *target);
-            int   getAccuracy(Blob<float> *target);
+            float GetLoss(Blob<float> *target);
+            int   GetAccuracy(Blob<float> *target);
 
         private:
             CrossEntropyLoss loss;

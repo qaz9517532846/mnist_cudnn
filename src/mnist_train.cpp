@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     double lrDecay = 0.0005f;
 
     bool loadPretrain = false;
-    bool fileSave = false;
+    bool fileSave = true;
 
     MNIST mnist("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/train.txt");
 
@@ -46,26 +46,19 @@ int main(int argc, char** argv)
     model.AddLayer(new Softmax("softmax"));
     model.Cuda();
 
-    printf("Train\n");
     if(loadPretrain) model.LoadPretrain();
     model.Train();
-
-    printf("Train Start\n");
 
     // step 3. train
     int step = 0;
     Blob<float> *trainData = mnist.GetData();
     Blob<float> *trainTarget = mnist.GetTarget();
-    printf("Train Get Data\n");
     mnist.GetBatch();
-
-    printf("Train Data\n");
 
     int tpCount = 0;
 
     while (step < numStepsTrain)
     {
-        printf("step = %d\n", step);
         // nvtx profiling start
         std::string nvtxMessage = std::string("step" + std::to_string(step));
         nvtxRangePushA(nvtxMessage.c_str());

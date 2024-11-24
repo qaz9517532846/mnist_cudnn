@@ -69,6 +69,11 @@ target_link_libraries(mnist_train Helper Blob Loss Layer NetWork Mnist)
 target_include_directories(mnist_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
 ament_target_dependencies(mnist_train rclcpp)
 
+add_executable(mnist_test src/mnist_test.cpp)
+target_link_libraries(mnist_test Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_test rclcpp)
+
 install(TARGETS
         Helper
         Blob
@@ -82,6 +87,7 @@ install(TARGETS
 
 install(TARGETS
   mnist_train
+  mnist_test
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

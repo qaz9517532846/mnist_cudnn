@@ -29,7 +29,7 @@ namespace CUDA_NETWORK
             void Train(int batchSize = 1, bool shuffle = false);
             
             // load test dataset
-            void Test();
+            void Test(std::string imgFile);
             
             // update shared batch data buffer at current step index
             void GetBatch();
