@@ -57,7 +57,7 @@ int main(int argc, char** argv)
     // nvtx profiling stop
     nvtxRangePop();
 
-    //printf("Result = %f\n", model.output[0]);
+    printf("Result = %d\n", model.Result());
 
     return 0;
 }

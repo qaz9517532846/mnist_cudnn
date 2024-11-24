@@ -140,6 +140,7 @@ namespace CUDA_NETWORK
     {
 	    for (auto layer : layersVect)
 	    {
+			printf("SetLoadPretrain\n");
 		    layer->SetLoadPretrain();
 	    }
 
@@ -182,6 +183,22 @@ namespace CUDA_NETWORK
 		    layer->Freeze();
 	    }
     }
+
+	int Network::Result()
+	{
+		int result = 0;
+		float* output = layersVect.back()->output_->To(HOST);
+
+		for(int i = 1; i < 10; i++)
+		{
+			if(output[i] > output[result])
+			{
+				result = i;
+			}
+		}
+
+		return result;
+	}
 
     std::vector<Layer*> Network::Layers()
     {

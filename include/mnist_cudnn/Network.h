@@ -39,6 +39,7 @@ namespace CUDA_NETWORK
             void Cuda();
             void Train();
             void Test();
+            int Result();
             
             Blob<float> *output;
             std::vector<Layer*> Layers();

@@ -242,7 +242,7 @@ namespace CUDA_NETWORK
 			InitOneVec<<<(batchSize_ + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D >>>(dOneVec, batchSize_);
 
 			// initialize weights and biases
-			if(loadPretrain && !freeze_)
+			if(loadPretrain && freeze_)
 			{
 				if(LoadParameter())
 				{
@@ -674,7 +674,7 @@ namespace CUDA_NETWORK
 			SetWorkspace();
 
 			// initialize weights
-			if(loadPretrain && !freeze_)
+			if(loadPretrain && freeze_)
 			{
 				if(LoadParameter())
 				{
