@@ -23,6 +23,8 @@ MNIST(National Institute of Standards and Technology database) handwriting recog
 
 ImageProcessing - https://github.com/chankeh/ImageProcessing
 
+------
+
 ### Installation
 
 ``` bash
