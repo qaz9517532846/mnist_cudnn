@@ -1,5 +1,5 @@
 # mnist_cudnn
-mnist using cudnn
+MNIST(National Institute of Standards and Technology database) handwriting recognition using Deep learning and CUDNN library under ROS 2 Foxy.
 
 ## Built with
 
@@ -7,15 +7,21 @@ mnist using cudnn
 
 ## Required Package
 
+- OpenCV - https://opencv.org/
+
 - NVIDIA CUDA - https://developer.nvidia.com/cuda-toolkit
 
 - NVIDIA CUBLAS - https://developer.nvidia.com/cublas
 
-- NVIDIA CUDNN - https://developer.nvidia.com/cublas
+- NVIDIA CUDNN - https://developer.nvidia.com/cudnn
 
 ------
 
 ## Getting Started
+
+### Database
+
+ImageProcessing - https://github.com/chankeh/ImageProcessing
 
 ### Installation
 
@@ -28,16 +34,20 @@ $ git clone https://github.com/qaz9517532846/mnist_cudnn.git
 ------
 
 ``` bash
-$ ros2 run mnist_cudnn mnist_train.launch.py
+$ ros2 run mnist_cudnn mnist_train
 ```
 
 ``` bash
-$ ros2 run mnist_cudnn mnist_test.launch.py
+$ ros2 run mnist_cudnn mnist_test
 ```
 
 ------
 
 ## Reference:
+
+[1]. mnist_cudnn - https://github.com/haanjack/mnist-cudnn
+
+[2]. cudnn-rnn-check - https://github.com/jzhang533/cudnn-rnn-check/tree/master
 
 ------
 
@@ -45,4 +55,4 @@ $ ros2 run mnist_cudnn mnist_test.launch.py
 
 This repository is for your reference only. copying, patent applications, and academic journals are strictly prohibited.
 
-Copyright © 2023 ZM Robotics Software Laboratory.
+Copyright © 2024 ZM Robotics Software Laboratory.
