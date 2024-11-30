@@ -8,9 +8,8 @@
 
 namespace CUDA_NETWORK
 {
-    MNIST::MNIST(std::string dataPath)
+    MNIST::MNIST()
     {
-        filePath = dataPath;
     }
 
     MNIST::~MNIST()
@@ -57,7 +56,7 @@ namespace CUDA_NETWORK
         return img;
     }
 
-    void MNIST::LoadData()
+    void MNIST::LoadTrainData(std::string filePath)
     {
         printf("Read File = %s\n", filePath.c_str());
         std::string dataDir = "/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/";
@@ -116,7 +115,7 @@ namespace CUDA_NETWORK
                 (ptr[2] & 0xFF) << 8 | (ptr[3] & 0xFF) << 0);
     }
 
-    void MNIST::Train(int batchSize, bool shuffle)
+    void MNIST::Train(std::string filePath, int batchSize, bool shuffle)
     {
         if (batchSize < 1)
         {
@@ -126,8 +125,8 @@ namespace CUDA_NETWORK
         
         batchSize_ = batchSize;
         shuffle = shuffle;
-        
-        LoadData();
+
+        LoadTrainData(filePath);
         
         if (shuffle)
             ShuffleDataset();
@@ -171,6 +170,25 @@ namespace CUDA_NETWORK
         // copy target with one-hot encoded
         for (int i = 0; i < batchSize_; i++)
             std::copy(targetPool[dataIdx + i].data(), &targetPool[dataIdx + i].data()[MNIST_CLASS], &target->Ptr()[MNIST_CLASS * i]);
+    }
+
+    void MNIST::GetTestBatch()
+    {
+        if (step_ < 0)
+        {
+            std::cout << "You must initialize dataset first.." << std::endl;
+            exit (-1);
+        }
+        
+        // index clipping
+        int dataIdx = step_ % numSteps_ * batchSize_;
+
+        // prepare data blob
+        int dataSize = channels_ * width_ * height_;
+        
+        // copy data
+        for (int i = 0; i < batchSize_; i++)
+            std::copy(dataPool[dataIdx + i].data(), &dataPool[dataIdx + i].data()[dataSize], &data->Ptr()[dataSize * i]);
     }
 
     int MNIST::Next()

@@ -21,8 +21,8 @@ int main(int argc, char** argv)
      // phase 2. inferencing
     // step 1. load test set
     std::cout << "[INFERENCE]" << std::endl;
-    MNIST mnist("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/train.txt");
-    mnist.Test("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/5/mnist_train_47.png");
+    MNIST mnist;
+    mnist.Test("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/test/3/mnist_test_200.png");
 
     // step 2. model initialization
 
@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     
     // step 3. iterates the testing loop
     Blob<float> *testData = mnist.GetData();
+    mnist.GetTestBatch();
 
 
     // nvtx profiling start

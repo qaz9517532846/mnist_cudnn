@@ -53,7 +53,7 @@ namespace CUDA_NETWORK
 		#if (DEBUG_FORWARD > 1)
 			output->Print("output", true);
 
-			if (phase == INTERFACE) GetChar();
+			if (phase == INTERFACE) getchar();
 		#endif
 		#endif // DEBUG_FORWARD
 
@@ -140,7 +140,6 @@ namespace CUDA_NETWORK
     {
 	    for (auto layer : layersVect)
 	    {
-			printf("SetLoadPretrain\n");
 		    layer->SetLoadPretrain();
 	    }
 

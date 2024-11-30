@@ -22,17 +22,18 @@ namespace CUDA_NETWORK
     class MNIST
     {
         public:
-            MNIST(std::string dataPath);
+            MNIST();
             ~MNIST();
 
             // load train dataset
-            void Train(int batchSize = 1, bool shuffle = false);
+            void Train(std::string filePath, int batchSize = 1, bool shuffle = false);
             
             // load test dataset
             void Test(std::string imgFile);
             
             // update shared batch data buffer at current step index
             void GetBatch();
+            void GetTestBatch();
             
             // increase current step index
             // optionally it updates shared buffer if input parameter is true.
@@ -50,11 +51,11 @@ namespace CUDA_NETWORK
             std::vector<std::array<float, MNIST_CLASS>> targetPool;
             Blob<float>* data = nullptr;
             Blob<float>* target = nullptr;
-            
-            int ToInt(uint8_t *ptr);
 
             // data loader initialization
-            void LoadData();
+            void LoadTrainData(std::string dataPath);
+            
+            int ToInt(uint8_t *ptr);
             
             std::string filePath;
             // data loader control

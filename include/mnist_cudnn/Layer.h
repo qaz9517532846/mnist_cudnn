@@ -36,6 +36,7 @@ namespace CUDA_NETWORK
 
             // tensor descriptor for the input/output tensors
             cudnnTensorDescriptor_t inputDesc;
+            cudnnTensorDescriptor_t hiddenDesc;
             cudnnTensorDescriptor_t outputDesc;
 
             // weight/bias descriptor
@@ -146,6 +147,28 @@ namespace CUDA_NETWORK
             cudnnConvolutionFwdAlgo_t       convFwdAlgo;
             cudnnConvolutionBwdDataAlgo_t   convBwdDataAlgo;
             cudnnConvolutionBwdFilterAlgo_t convBwdFilterAlgo;
+
+            size_t workspaceSize = 0;
+            void** dWorkspace = nullptr;
+            void SetWorkspace();
+    };
+
+    class RNN: public Layer
+    {
+        public:
+            RNN(std::string name, int hiddenSize, int bidirectional = 0, int dropout = 0, int mode = 0);
+            ~RNN();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradOutput);
+
+        private:
+            int hiddenSize_;
+            int bidirectional_;
+            int dropout_;
+            int mode_;
+
+            cudnnRNNDescriptor_t rnnDesc;
 
             size_t workspaceSize = 0;
             void** dWorkspace = nullptr;

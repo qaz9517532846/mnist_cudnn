@@ -25,14 +25,14 @@ int main(int argc, char** argv)
     bool loadPretrain = false;
     bool fileSave = true;
 
-    MNIST mnist("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/train.txt");
+    MNIST mnist;
 
     /* Welcome Message */
     std::cout << "== MNIST training with CUDNN ==" << std::endl;
 
     // phase 1. training
     std::cout << "[TRAIN]" << std::endl;
-    mnist.Train(batchSizeTrain, true);
+    mnist.Train("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/train.txt", batchSizeTrain, true);
 
     // step 2. model initialization
     Network model;
