@@ -63,7 +63,77 @@ $ ros2 run mnist_cudnn mnist_test
 
 Train
 
+``` bash
+.. model Configuration ..
+CUDA: conv1
+CUDA: pool
+CUDA: conv2
+CUDA: pool
+CUDA: dense1
+CUDA: relu
+CUDA: dense2
+CUDA: softmax
+conv1: Available Algorithm Count [FWD]: 10
+conv1: Available Algorithm Count [BWD-filter]: 9
+conv1: Available Algorithm Count [BWD-data]: 8
+.. initialized conv1 layer ..
+conv2: Available Algorithm Count [FWD]: 10
+conv2: Available Algorithm Count [BWD-filter]: 9
+conv2: Available Algorithm Count [BWD-data]: 8
+.. initialized conv2 layer ..
+.. initialized dense1 layer ..
+.. initialized dense2 layer ..
+step:  200, loss: 0.401, accuracy: 74.867%
+step:  400, loss: 0.315, accuracy: 91.447%
+step:  600, loss: 0.216, accuracy: 93.490%
+step:  800, loss: 0.143, accuracy: 94.633%
+step: 1000, loss: 0.123, accuracy: 95.438%
+step: 1200, loss: 0.165, accuracy: 95.941%
+step: 1400, loss: 0.112, accuracy: 96.439%
+step: 1600, loss: 0.085, accuracy: 96.744%
+step: 1800, loss: 0.072, accuracy: 96.895%
+step: 2000, loss: 0.101, accuracy: 97.061%
+step: 2200, loss: 0.079, accuracy: 97.254%
+step: 2400, loss: 0.062, accuracy: 97.354%
+.. store weights to the storage ..
+.. saving conv1 parameter .. done ..
+.. saving pool parameter .. done ..
+.. saving conv2 parameter .. done ..
+.. saving pool parameter .. done ..
+.. saving dense1 parameter .. done ..
+.. saving relu parameter .. done ..
+.. saving dense2 parameter .. done ..
+.. saving softmax parameter .. done ..
+```
+
 Test
+
+``` bash
+[INFERENCE]
+Data Finished
+Data Tensor
+Data target
+Test Finished.. model Configuration ..
+CUDA: conv1
+CUDA: pool
+CUDA: conv2
+CUDA: pool
+CUDA: dense1
+CUDA: relu
+CUDA: dense2
+CUDA: softmax
+conv1: Available Algorithm Count [FWD]: 10
+conv1: Available Algorithm Count [BWD-filter]: 9
+conv1: Available Algorithm Count [BWD-data]: 8
+.. loaded conv1 pretrain parameter..
+conv2: Available Algorithm Count [FWD]: 10
+conv2: Available Algorithm Count [BWD-filter]: 9
+conv2: Available Algorithm Count [BWD-data]: 8
+.. loaded conv2 pretrain parameter..
+.. loaded dense1 pretrain parameter..
+.. loaded dense2 pretrain parameter..
+Result = 3
+```
 
 ------
 
