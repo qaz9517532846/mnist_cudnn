@@ -43,6 +43,10 @@ mnist.Train("<Train data test>", batchSizeTrain, true);
 ```
 
 ``` bash
+$ ros2 run mnist_cudnn mnist_train
+```
+
+``` bash
 .. model Configuration ..
 CUDA: conv1
 CUDA: pool
@@ -83,10 +87,6 @@ step: 2400, loss: 0.062, accuracy: 97.354%
 .. saving relu parameter .. done ..
 .. saving dense2 parameter .. done ..
 .. saving softmax parameter .. done ..
-```
-
-``` bash
-$ ros2 run mnist_cudnn mnist_train
 ```
 
 Test Image
