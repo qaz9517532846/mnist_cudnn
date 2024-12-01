@@ -46,7 +46,7 @@ mnist.Train("<Train data test>", batchSizeTrain, true);
 $ ros2 run mnist_cudnn mnist_train
 ```
 
-Train Data
+Test Image
 
 ``` bash
 MNIST mnist;
@@ -56,6 +56,14 @@ mnist.Test("<image file>");
 ``` bash
 $ ros2 run mnist_cudnn mnist_test
 ```
+
+### Result
+
+------
+
+Train
+
+Test
 
 ------
 
