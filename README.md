@@ -43,27 +43,6 @@ mnist.Train("<Train data test>", batchSizeTrain, true);
 ```
 
 ``` bash
-$ ros2 run mnist_cudnn mnist_train
-```
-
-Test Image
-
-``` bash
-MNIST mnist;
-mnist.Test("<image file>");
-```
-
-``` bash
-$ ros2 run mnist_cudnn mnist_test
-```
-
-### Result
-
-------
-
-Train
-
-``` bash
 .. model Configuration ..
 CUDA: conv1
 CUDA: pool
@@ -106,8 +85,20 @@ step: 2400, loss: 0.062, accuracy: 97.354%
 .. saving softmax parameter .. done ..
 ```
 
-Test
+``` bash
+$ ros2 run mnist_cudnn mnist_train
+```
 
+Test Image
+
+``` bash
+MNIST mnist;
+mnist.Test("<image file>");
+```
+
+``` bash
+$ ros2 run mnist_cudnn mnist_test
+```
 ``` bash
 [INFERENCE]
 Data Finished
