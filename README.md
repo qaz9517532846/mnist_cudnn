@@ -35,8 +35,22 @@ $ git clone https://github.com/qaz9517532846/mnist_cudnn.git
 
 ------
 
+Train Data
+
+``` bash
+MNIST mnist;
+mnist.Train("<Train data test>", batchSizeTrain, true);
+```
+
 ``` bash
 $ ros2 run mnist_cudnn mnist_train
+```
+
+Train Data
+
+``` bash
+MNIST mnist;
+mnist.Test("<image file>");
 ```
 
 ``` bash
