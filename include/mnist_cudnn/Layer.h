@@ -36,16 +36,19 @@ namespace CUDA_NETWORK
 
             // tensor descriptor for the input/output tensors
             cudnnTensorDescriptor_t inputDesc;
-            cudnnTensorDescriptor_t hiddenDesc;
             cudnnTensorDescriptor_t outputDesc;
 
             // weight/bias descriptor
             cudnnFilterDescriptor_t filterDesc;
+            cudnnTensorDescriptor_t weightDesc;
             cudnnTensorDescriptor_t biasDesc;
+
+
     
             // output memory
             Blob<float> *input_        = nullptr;    /* x  */
             Blob<float> *output_       = nullptr;    /* y  */
+            Blob<float> *hInput_       = nullptr;    /* hInput  */
             Blob<float> *gradInput_    = nullptr;    /* dx */
             Blob<float> *gradOutput_   = nullptr;    /* dy */
 
@@ -153,28 +156,6 @@ namespace CUDA_NETWORK
             void SetWorkspace();
     };
 
-    class RNN: public Layer
-    {
-        public:
-            RNN(std::string name, int hiddenSize, int bidirectional = 0, int dropout = 0, int mode = 0);
-            ~RNN();
-
-            Blob<float> *Forward(Blob<float> *input);
-            Blob<float> *Backward(Blob<float> *gradOutput);
-
-        private:
-            int hiddenSize_;
-            int bidirectional_;
-            int dropout_;
-            int mode_;
-
-            cudnnRNNDescriptor_t rnnDesc;
-
-            size_t workspaceSize = 0;
-            void** dWorkspace = nullptr;
-            void SetWorkspace();
-    };
-
     class Pooling: public Layer
     {
         public: 
@@ -192,6 +173,58 @@ namespace CUDA_NETWORK
 
             std::array<int, 4> outputSize;
             cudnnPoolingDescriptor_t poolDesc;
+    };
+
+    class RNN: public Layer
+    {
+        public:
+            RNN(std::string name, const int hiddenSize, const int numLayer, double dropout, cudnnDirectionMode_t bidirectional, cudnnRNNMode_t mode);
+            ~RNN();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradOutput);
+
+        private:
+            int hiddenSize_;
+            int numLayer_;
+            int inputSize_;
+            int seqLen_;
+            double dropout_;
+            int dimHidden[3];
+            int strideHidden[3];
+            int *seqLengthArray;
+            int *devSeqLengthArray;
+
+            // output memory
+            Blob<float> *hx_        = nullptr;    /* hx  */
+            Blob<float> *hy_        = nullptr;    /* hy  */
+            Blob<float> *cx_        = nullptr;    /* cx  */
+            Blob<float> *cy_        = nullptr;    /* cy  */
+            Blob<float> *dhx_       = nullptr;    /* dhx  */
+            Blob<float> *dhy_       = nullptr;    /* dhy  */
+            Blob<float> *dcx_       = nullptr;    /* dcx  */
+            Blob<float> *dcy_       = nullptr;    /* dcy  */
+
+
+            cudnnRNNMode_t mode_;
+            cudnnDirectionMode_t bidirectional_;
+            cudnnRNNDescriptor_t rnnDesc;
+            cudnnDropoutDescriptor_t dropoutDesc;
+            cudnnRNNDataDescriptor_t xDesc;
+            cudnnRNNDataDescriptor_t yDesc;
+            cudnnTensorDescriptor_t  hDesc;
+            cudnnTensorDescriptor_t  cDesc;
+            // Initialize dropout descriptor
+            
+            void *dropoutStates;
+            size_t dropoutStatesSize = 0;
+            size_t weightSize;
+            size_t workspaceSize = 0;
+            void** dWorkspace = nullptr;
+            size_t reserveSize = 0;
+            void** reserveSpace = nullptr;
+            void** weightSpace = nullptr;
+            void SetWorkspace();
     };
 }
 
