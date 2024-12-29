@@ -39,7 +39,7 @@ Train Data
 
 ``` bash
 MNIST mnist;
-mnist.Train("<Train data test>", batchSizeTrain, true);
+mnist.Train("<Train path>", "<Train dataset>", batchSizeTrain, true);
 ```
 
 ``` bash

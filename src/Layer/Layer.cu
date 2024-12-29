@@ -12,6 +12,46 @@
 #include <fstream>
 #include <iostream>
 
+#define CUDA_1D_KERNEL_LOOP(i, n)                                 \
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); \
+       i += blockDim.x * gridDim.x)
+
+__global__ void Add(float *arrayA, float *arrayB, float *arrayC, int size)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int step = blockDim.x * gridDim.x;
+
+    for (int i = tid; i < size; i += step)
+	{
+		arrayC[i] = arrayA[i] + arrayB[i];
+    }
+}
+
+__global__ void AdamUpdate(int N, int step, float *m, float *v, float *w, const float *g, const float beta1, const float beta2, const float eps_hat, const float lr)
+{
+    CUDA_1D_KERNEL_LOOP(i, N)
+	{
+        // Updating running mean and var.
+        m[i] = m[i] * beta1 + g[i] * (1 - beta1);
+        v[i] = v[i] * beta2 + g[i] * g[i] * (1 - beta2);
+        float mi = m[i] / (1 - std::pow(beta1, step + 1));
+        float vi = v[i] / (1 - std::pow(beta2, step + 1));
+        // Update parameters.
+        w[i] = w[i] - lr * mi / (std::sqrt(vi) + eps_hat);
+    }
+}
+
+__global__ void RmspropUpdate(int N, float *m, float *w, const float *g, const float decay, const float eps_hat, const float lr)
+{
+    CUDA_1D_KERNEL_LOOP(i, N)
+	{
+        // Updating running mean and var.
+        m[i] = m[i] + (1 - decay) * (g[i] * g[i] - m[i]);
+        // Update parameters.
+        w[i] = w[i] - lr * g[i] / std::sqrt(eps_hat + m[i]);
+    }
+}
+
 namespace CUDA_NETWORK
 {    
 	/****************************************************************
@@ -104,6 +144,110 @@ namespace CUDA_NETWORK
         #endif // DEBUG_UPDATE
 	    }
     }
+	
+	void Layer::UpdateWeightsBiasesWithAdam(float learningRate, float beta1, float beta2, float epsHat, int step)
+	{
+		if (weights_ != nullptr && gradWeights_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+			weights_->print(name_ + "::weights (before update)", true);
+			grad_weights_->print(name_ + "::gweights", true);
+		#endif // DEBUG_UPDATE
+        	/*
+			 * mt = b1*mt + (1-b1)*dw
+        	 * vt = b2*vt + (1-b2)*dw*dw
+        	 * mtt = mt/(1-(b1^(i+1)))
+        	 * vtt = vt/(1-(b2^(i+1)))
+        	 * w = w + eps * mtt/(std::sqrt(vtt) + e)
+        	 */
+			 
+			AdamUpdate<<< 16, BLOCK_DIM_1D >>>(weights_->Length(),
+												step,
+												weightsM_->Cuda(),
+												weightsV_->Cuda(),
+												weights_->Cuda(),
+												gradWeights_->Cuda(),
+												beta1,
+												beta2,
+												epsHat,
+												learningRate);
+		#if (DEBUG_UPDATE)
+			weights_->print(name_ + "weights (after update)", true);
+			// getchar();
+		#endif // DEBUG_UPDATE
+		}
+		
+		if (biases_ != nullptr && gradBiases_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+			biases_->print(name_ + "biases (before update)", true);
+			gradBiases_->print(name_ + "gbiases", true);
+		#endif // DEBUG_UPDATE
+		
+			AdamUpdate<<< 16, BLOCK_DIM_1D >>>(biases_->Length(),
+												step,
+												biasesM_->Cuda(),
+												biasesV_->Cuda(),
+												biases_->Cuda(),
+												gradBiases_->Cuda(),
+												beta1,
+												beta2,
+												epsHat,
+												learningRate);
+												
+		#if (DEBUG_UPDATE)
+			biases_->print(name_ + "biases (after update)", true);
+			// getchar();
+		#endif // DEBUG_UPDATE
+		}
+	}
+
+	void Layer::UpdateWeightsBiasesWithRmsprop(float learningRate, float decay, float epsHat)
+	{
+		if (weights_ != nullptr && gradWeights_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+        	weights_->print(name_ + "::weights (before update)", true);
+        	gradWeights_->print(name_ + "::gweights", true);
+		#endif // DEBUG_UPDATE
+
+        	/*
+        	 * mt = mt + (1 - decay) * (dw * dw - mt)
+        	 * w = w - learning_rate * dw /std::sqrt(eps_hat + mt)
+        	 */
+        	RmspropUpdate<<< BLOCK_DIM, BLOCK_DIM_1D >>>(weights_->Length(),
+														 weightsM_->Cuda(),
+														 weights_->Cuda(),
+														 gradWeights_->Cuda(),
+														 decay,
+														 epsHat,
+														 learningRate);
+		#if (DEBUG_UPDATE)
+        	weights_->print(name_ + "weights (after update)", true);
+        	// getchar();
+		#endif // DEBUG_UPDATE
+    	}
+
+		if (biases_ != nullptr && gradBiases_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+        	biases_->print(name_ + "biases (before update)", true);
+        	gradBiases_->print(name_ + "gbiases", true);
+		#endif // DEBUG_UPDATE
+
+        	RmspropUpdate<<< BLOCK_DIM, BLOCK_DIM_1D >>>(weights_->Length(),
+														 weightsM_->Cuda(),
+														 weights_->Cuda(),
+														 gradWeights_->Cuda(),
+														 decay,
+														 epsHat,
+														 learningRate);
+		#if (DEBUG_UPDATE)
+			biases_->print(name_ + "biases (after update)", true);
+			// getchar();
+		#endif // DEBUG_UPDATE
+		}
+	}
 
     float Layer::GetLoss(Blob<float> *target)
     {

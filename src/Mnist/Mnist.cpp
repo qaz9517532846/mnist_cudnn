@@ -56,16 +56,17 @@ namespace CUDA_NETWORK
         return img;
     }
 
-    void MNIST::LoadTrainData(std::string filePath)
+    void MNIST::LoadTrainData(std::string path, std::string file)
     {
-        printf("Read File = %s\n", filePath.c_str());
-        std::string dataDir = "/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/";
-        std::ifstream file(filePath);
+        filePath = path + file;
+        std::ifstream datafile(filePath);
+
+        printf("Path = %s\n", filePath.c_str());
         
         // check file exist??
-        if (!file.is_open())
+        if (!datafile.is_open())
         {
-            std::cerr << "Not Open file." << std::endl;
+            std::cerr << "Not Open file." << filePath << std::endl;
             return;
         }
         
@@ -73,7 +74,7 @@ namespace CUDA_NETWORK
         int label;
         int numData_ = 0;
         numClasses_ = MNIST_CLASS;
-        while (std::getline(file, line))
+        while (std::getline(datafile, line))
         {
             std::string imgPath;
             std::cout << line << std::endl;  // 輸出每一行內容
@@ -81,7 +82,7 @@ namespace CUDA_NETWORK
             iss >> imgFile >> label;
             printf("Image File Name = %s, Lable = %d\n", imgFile.c_str(), label);
 
-            imgPath = dataDir + std::to_string(label) + "/" + imgFile;
+            imgPath = path + std::to_string(label) + "/" + imgFile;
             std::vector<float> imageRawData = ImageProcess(imgPath);
 
             std::array<float, MNIST_CLASS> targetBatch;
@@ -96,7 +97,7 @@ namespace CUDA_NETWORK
 
         numSteps_ = numData_ / batchSize_;
         // close file
-        file.close();
+        datafile.close();
     }
 
     void MNIST::ShuffleDataset()
@@ -115,7 +116,7 @@ namespace CUDA_NETWORK
                 (ptr[2] & 0xFF) << 8 | (ptr[3] & 0xFF) << 0);
     }
 
-    void MNIST::Train(std::string filePath, int batchSize, bool shuffle)
+    void MNIST::Train(std::string path, std::string file, int batchSize, bool shuffle)
     {
         if (batchSize < 1)
         {
@@ -126,7 +127,7 @@ namespace CUDA_NETWORK
         batchSize_ = batchSize;
         shuffle = shuffle;
 
-        LoadTrainData(filePath);
+        LoadTrainData(path, file);
         
         if (shuffle)
             ShuffleDataset();

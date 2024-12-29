@@ -42,20 +42,21 @@ namespace CUDA_NETWORK
             cudnnFilterDescriptor_t filterDesc;
             cudnnTensorDescriptor_t weightDesc;
             cudnnTensorDescriptor_t biasDesc;
-
-
     
             // output memory
             Blob<float> *input_        = nullptr;    /* x  */
             Blob<float> *output_       = nullptr;    /* y  */
-            Blob<float> *hInput_       = nullptr;    /* hInput  */
             Blob<float> *gradInput_    = nullptr;    /* dx */
             Blob<float> *gradOutput_   = nullptr;    /* dy */
 
             // master weights & bias
             bool freeze_               = false;     /* control parameter updates */
             Blob<float> *weights_      = nullptr;   /* w */
+            Blob<float> *weightsM_ = nullptr;      /* wm */
+            Blob<float> *weightsV_ = nullptr;      /* wv */
             Blob<float> *biases_       = nullptr;   /* b */
+            Blob<float> *biasesM_ = nullptr;       /* bm */
+            Blob<float> *biasesV_ = nullptr;       /* bv */
             Blob<float> *gradWeights_  = nullptr;   /* dw */
             Blob<float> *gradBiases_   = nullptr;   /* db */
 
@@ -64,6 +65,8 @@ namespace CUDA_NETWORK
             // initialize weights along with the input size
             void InitWeightBias(unsigned int seed = 0);
             void UpdateWeightsBiases(float learningRate);
+            void UpdateWeightsBiasesWithAdam(float learningRate, float beta1, float beta2, float epsHat, int step);
+            void UpdateWeightsBiasesWithRmsprop(float learningRate, float decay, float epsHat);
 
             // cuda handle container
             CudaContext *cuda = nullptr;
@@ -205,7 +208,6 @@ namespace CUDA_NETWORK
             Blob<float> *dcx_       = nullptr;    /* dcx  */
             Blob<float> *dcy_       = nullptr;    /* dcy  */
 
-
             cudnnRNNMode_t mode_;
             cudnnDirectionMode_t bidirectional_;
             cudnnRNNDescriptor_t rnnDesc;
@@ -225,6 +227,66 @@ namespace CUDA_NETWORK
             void** reserveSpace = nullptr;
             void** weightSpace = nullptr;
             void SetWorkspace();
+    };
+    
+    class LRN: public Layer
+    {
+        public:
+            LRN(std::string name, unsigned n = 5, double alpha = 0.0001, double beta = 0.75, double k = 1.0);
+            ~LRN();
+            
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradInput);
+
+        private:
+            unsigned lrnN;
+            double lrnAlpha;
+            double lrnBeta;
+            double lrnK;
+            cudnnLRNDescriptor_t normDesc;
+    };
+
+    class Dropout: public Layer
+    {
+        public:
+            Dropout(std::string name, float drop = 0.5);
+            ~Dropout();
+
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradInput);
+
+        private:
+            float dropout;
+            size_t stateSize = 0;
+            void *states = nullptr;
+            unsigned long long seed = 1337ull; // Pick a seed.
+            size_t reserveSize = 0;
+            void *mPReserve = nullptr;
+            cudnnDropoutDescriptor_t dropoutDesc;
+    };
+
+    class FusedBatchNormalization: public Layer
+    {
+        public:
+            FusedBatchNormalization(std::string name, cudnnBatchNormMode_t mode);
+            ~FusedBatchNormalization();
+            
+            Blob<float> *Forward(Blob<float> *input);
+            Blob<float> *Backward(Blob<float> *gradInput);
+        
+        private:
+            int size;
+            int batchCount_ = 0;
+            double epison = 0.001;
+            double exponentialAverageFactor_ = 0;
+
+            float *resultRunningMean = nullptr;
+            float *resultRunningVariance = nullptr;
+            float *resultSaveMean = nullptr;
+            float *resultSaveInvVariance = nullptr;
+
+            cudnnBatchNormMode_t mode_;
+            cudnnTensorDescriptor_t bnScaleBiasMeanVarDesc;
     };
 }
 

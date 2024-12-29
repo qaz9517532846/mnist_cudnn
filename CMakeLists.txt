@@ -51,7 +51,9 @@ cuda_add_library(Loss SHARED src/Loss/Loss.cu)
 cuda_add_library(Layer SHARED src/Layer/Activation.cu
                               src/Layer/Conv2D.cu
                               src/Layer/Dense.cu
+                              src/Layer/Dropout.cu
                               src/Layer/Layer.cu
+                              src/Layer/Lrn.cu
                               src/Layer/Pooling.cu
                               src/Layer/Rnn.cu
                               src/Layer/Softmax.cu)

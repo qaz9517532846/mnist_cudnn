@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 
     // phase 1. training
     std::cout << "[TRAIN]" << std::endl;
-    mnist.Train("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/train/train.txt", batchSizeTrain, true);
+    mnist.Train("/home/zmtech/data/train/", "train.txt", batchSizeTrain, true);
 
     // step 2. model initialization
     Network model;

@@ -26,7 +26,7 @@ namespace CUDA_NETWORK
             ~MNIST();
 
             // load train dataset
-            void Train(std::string filePath, int batchSize = 1, bool shuffle = false);
+            void Train(std::string path, std::string file, int batchSize = 1, bool shuffle = false);
             
             // load test dataset
             void Test(std::string imgFile);
@@ -53,7 +53,7 @@ namespace CUDA_NETWORK
             Blob<float>* target = nullptr;
 
             // data loader initialization
-            void LoadTrainData(std::string dataPath);
+            void LoadTrainData(std::string path, std::string file);
             
             int ToInt(uint8_t *ptr);
             

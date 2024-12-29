@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     // step 1. load test set
     std::cout << "[INFERENCE]" << std::endl;
     MNIST mnist;
-    mnist.Test("/home/zmtech/catkin2_ws/src/mnist_cudnn/data/test/3/mnist_test_200.png");
+    mnist.Test("/home/zmtech/data/test/3/mnist_test_200.png");
 
     // step 2. model initialization
 
