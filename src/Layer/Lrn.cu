@@ -61,8 +61,8 @@ namespace CUDA_NETWORK
                                                      outputDesc,
                                                      output_->Cuda()));
     #if (DEBUG_CONV & 0x01)
-        input_->print(name_ + "::input", true, input_->n(), 28);
-        output_->print(name_ + "::output", true);
+        input_->print(layerName + "::input", true, input_->n(), 28);
+        output_->print(layerName + "::output", true);
     #endif
 
         return output_;

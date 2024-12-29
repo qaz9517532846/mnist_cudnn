@@ -52,6 +52,7 @@ cuda_add_library(Layer SHARED src/Layer/Activation.cu
                               src/Layer/Conv2D.cu
                               src/Layer/Dense.cu
                               src/Layer/Dropout.cu
+                              src/Layer/FusedBatchNormalization.cu
                               src/Layer/Layer.cu
                               src/Layer/Lrn.cu
                               src/Layer/Pooling.cu
