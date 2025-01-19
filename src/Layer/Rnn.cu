@@ -21,7 +21,7 @@ namespace CUDA_NETWORK
 	/**
  	* RNN layer with bias
  	*/
-	RNN::RNN(std::string name, const int hiddenSize, const int numLayer, double dropout, cudnnDirectionMode_t bidirectional, cudnnRNNMode_t mode)
+	RNN::RNN(std::string name, Layer *inputFrom, const int hiddenSize, const int numLayer, double dropout, cudnnDirectionMode_t bidirectional, cudnnRNNMode_t mode)
 	{
 		layerName = name;
 

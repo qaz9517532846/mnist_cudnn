@@ -27,6 +27,8 @@ find_library(CUDNN_LIBRARY cudnn PATHS /usr/local/cuda/lib64)
 include_directories(
   ${CUDA_INCLUDE_DIRS} 
   ${OpenCV_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
+  /usr/include/eigen3/
   include
 )
 
@@ -49,6 +51,7 @@ add_library(NetWork SHARED src/NetWork/NetWork.cpp)
 add_library(Mnist SHARED src/Mnist/Mnist.cpp)
 cuda_add_library(Loss SHARED src/Loss/Loss.cu)
 cuda_add_library(Layer SHARED src/Layer/Activation.cu
+                              src/Layer/Add.cu
                               src/Layer/Conv2D.cu
                               src/Layer/Dense.cu
                               src/Layer/Dropout.cu
@@ -56,6 +59,7 @@ cuda_add_library(Layer SHARED src/Layer/Activation.cu
                               src/Layer/Layer.cu
                               src/Layer/Lrn.cu
                               src/Layer/Pooling.cu
+                              src/Layer/Pad.cu
                               src/Layer/Rnn.cu
                               src/Layer/Softmax.cu)
 

@@ -27,14 +27,15 @@ int main(int argc, char** argv)
     // step 2. model initialization
 
     Network model;
-    model.AddLayer(new Conv2D("conv1", 20, 5));
-    model.AddLayer(new Pooling("pool", 2, 0, 2, CUDNN_POOLING_MAX));
-    model.AddLayer(new Conv2D("conv2", 50, 5));
-    model.AddLayer(new Pooling("pool", 2, 0, 2, CUDNN_POOLING_MAX));
-    model.AddLayer(new Dense("dense1", 500));
-    model.AddLayer(new Activation("relu", CUDNN_ACTIVATION_RELU));
-    model.AddLayer(new Dense("dense2", 10));
-    model.AddLayer(new Softmax("softmax"));
+    Layer *mainline = nullptr;
+    model.AddLayer(new Conv2D("conv1", mainline, 20, 5));
+    model.AddLayer(new Pooling("pool", mainline, 2, 0, 2, CUDNN_POOLING_MAX));
+    model.AddLayer(new Conv2D("conv2", mainline, 50, 5));
+    model.AddLayer(new Pooling("pool", mainline, 2, 0, 2, CUDNN_POOLING_MAX));
+    model.AddLayer(new Dense("dense1", mainline, 500));
+    model.AddLayer(new Activation("relu", mainline, CUDNN_ACTIVATION_RELU));
+    model.AddLayer(new Dense("dense2", mainline, 10));
+    model.AddLayer(new Softmax("softmax", mainline));
     model.Cuda();
 
     if(loadPretrain) model.LoadPretrain();

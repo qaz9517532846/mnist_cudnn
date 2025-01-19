@@ -18,8 +18,9 @@ namespace CUDA_NETWORK
     * Dense Layer                                                  *
     ****************************************************************/
 
-	Dense::Dense(std::string name, int outSize)
+	Dense::Dense(std::string name, Layer *inputFrom, int outSize)
 	{
+		SetLayerRelationship(inputFrom);
 		layerName = name;
 		outputSize = outSize;
 	}
@@ -40,6 +41,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Dense::Forward(Blob<float> *input)
 	{
+		input = GetInput(input);
+
 		// initialize weights and biases
 		if(weights_ == nullptr)
 		{
@@ -49,6 +52,10 @@ namespace CUDA_NETWORK
 			// initialize weight, bias, and output
 			weights_ = new Blob<float>(1, 1, inputSize, outputSize);
 			biases_  = new Blob<float>(1, 1, outputSize);
+			weightsM_ = new Blob<float>(1, 1, inputSize, outputSize);
+			weightsV_ = new Blob<float>(1, 1, inputSize, outputSize);
+			biasesM_ = new Blob<float>(1, 1, outputSize);
+			biasesV_ = new Blob<float>(1, 1, outputSize);
 		}
 
 		// initilaize input and output
@@ -67,7 +74,8 @@ namespace CUDA_NETWORK
 			if(dOneVec != nullptr) cudaFree(dOneVec);
 
 			CheckCudaErrors(cudaMalloc((void**)&dOneVec, sizeof(float) * batchSize_));
-			InitOneVec<<<(batchSize_ + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D >>>(dOneVec, batchSize_);
+			//config = GetGpuLaunchConfig(batchSize_, InitOneVec, 0, 0);
+			InitOneVec<<<(batchSize_ + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D, BLOCK_DIM_1D>>>(dOneVec, batchSize_);
 
 			// initialize weights and biases
 			if(loadPretrain && freeze_)
@@ -122,6 +130,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Dense::Backward(Blob<float> *gradOutput)
 	{
+		gradOutput = SumGradients(gradOutput);
+
 		if(gradWeights_ == nullptr)
 		{
 			gradWeights_ = new Blob<float>(weights_->Shape());

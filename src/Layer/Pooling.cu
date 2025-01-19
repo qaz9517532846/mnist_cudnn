@@ -17,11 +17,13 @@ namespace CUDA_NETWORK
 	/****************************************************************
  	 * Layer definition                                             *
  	****************************************************************/
-	Pooling::Pooling(std::string name, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode) :  poolKernelSize(kernelSize),
+	Pooling::Pooling(std::string name, Layer *inputFrom, int kernelSize, int padding, int stride, cudnnPoolingMode_t mode) :  poolKernelSize(kernelSize),
 																											poolPadding(padding),
 																											poolStride(stride),
 																											poolMode(mode)
 	{
+		SetLayerRelationship(inputFrom);
+
 		layerName = name;
 		cudnnCreatePoolingDescriptor(&poolDesc);
 		cudnnSetPooling2dDescriptor(poolDesc, poolMode, CUDNN_PROPAGATE_NAN, poolKernelSize, poolKernelSize, poolPadding, poolPadding, poolStride, poolStride);
@@ -34,6 +36,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Pooling::Forward(Blob<float> *input)
 	{
+		input = GetInput(input);
+
 		if(input == nullptr || batchSize_ != input->num)
 		{
 			input_ = input;
@@ -61,6 +65,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Pooling::Backward(Blob<float> *gradOutput)
 	{
+		gradOutput = SumGradients(gradOutput);
+
 		if (gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
 			gradOutput_ = gradOutput;

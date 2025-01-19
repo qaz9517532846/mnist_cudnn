@@ -21,12 +21,14 @@ namespace CUDA_NETWORK
 	/**
  	* Convolutional layer with bias
  	*/
-	Conv2D::Conv2D(std::string name, int outChannels, int kernelSize, int stride, int padding, int dilation) :  outChannels(outChannels),
-																												kernelSize(kernelSize),
-																												stride(stride),
-																												padding(padding),
-																												dilation(dilation)
+	Conv2D::Conv2D(std::string name, Layer *inputFrom, int outChannels, int kernelSize, int stride, int padding, int dilation) :  outChannels(outChannels),
+																																  kernelSize(kernelSize),
+																																  stride(stride),
+																																  padding(padding),
+																																  dilation(dilation)
 	{
+		SetLayerRelationship(inputFrom);
+
 		layerName = name;
 
 		// create cudnn container handles
@@ -104,6 +106,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Conv2D::Forward(Blob<float> *input)
 	{
+		input = GetInput(input);
+
 		// initialize weights and bias
 		if(weights_ == nullptr)
 		{
@@ -112,6 +116,10 @@ namespace CUDA_NETWORK
 			weights_ = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
 			biases_  = new Blob<float>(1, outChannels);	// bias size
 			biasDesc = biases_->Tensor();
+			weightsM_ = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
+			weightsV_ = new Blob<float>(outChannels, input->channel, kernelSize, kernelSize);
+			biasesM_  = new Blob<float>(1, outChannels);	// bias size
+			biasesV_  = new Blob<float>(1, outChannels);	// bias size
 		}
  
 		// initilaize input and output
@@ -175,6 +183,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Conv2D::Backward(Blob<float> *gradOutput)
 	{
+		gradOutput = SumGradients(gradOutput);
+
 		// initialize gradOutput back-propagation space
 		if(gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{

@@ -18,8 +18,10 @@ namespace CUDA_NETWORK
 	 * Softmax definition                                           *
 	 ****************************************************************/
 
-	Softmax::Softmax(std::string name)
+	Softmax::Softmax(std::string name, Layer *inputFrom)
 	{
+		SetLayerRelationship(inputFrom);
+
 		layerName = name;
 	}
 
@@ -30,6 +32,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Softmax::Forward(Blob<float> *input)
 	{
+		input = GetInput(input);
+
 		if(input == nullptr || batchSize_ != input->num)
 		{
 			input_ = input;
@@ -64,6 +68,8 @@ namespace CUDA_NETWORK
 	Blob<float> *Softmax::Backward(Blob<float> *target)
 	{
 		CheckCudaErrors(cudaDeviceSynchronize());
+
+		target = SumGradients(target);
 
 		if(gradInput_ == nullptr || batchSize_ != target->num)
 		{

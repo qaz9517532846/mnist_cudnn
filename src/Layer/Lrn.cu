@@ -17,7 +17,7 @@ namespace CUDA_NETWORK
     /****************************************************************
      * Local Response Normalization definition                      *
     ****************************************************************/
-    LRN::LRN(std::string name, unsigned n, double alpha, double beta, double k)
+    LRN::LRN(std::string name, Layer *inputFrom, unsigned n, double alpha, double beta, double k)
     {
         layerName = name;
         lrnN = n;

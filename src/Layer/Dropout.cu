@@ -17,7 +17,7 @@ namespace CUDA_NETWORK
     /****************************************************************
      * Dropout definition                      *
      ****************************************************************/
-    Dropout::Dropout(std::string name, float drop)
+    Dropout::Dropout(std::string name, Layer *inputFrom, float drop)
     {
         layerName = name;
         dropout = drop;

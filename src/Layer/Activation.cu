@@ -18,8 +18,10 @@ namespace CUDA_NETWORK
  	* Activation Layer                                             *
  	****************************************************************/
 
-	Activation::Activation(std::string name, cudnnActivationMode_t mode, float coef)
+	Activation::Activation(std::string name, Layer *inputFrom, cudnnActivationMode_t mode, float coef)
 	{
+		SetLayerRelationship(inputFrom);
+
 		layerName = name;
 		actMode = mode;
 		actCoef = coef;
@@ -35,6 +37,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Activation::Forward(Blob<float> *input)
 	{
+		input = GetInput(input);
+
 		if(input == nullptr || batchSize_ != input->num)
 		{
 			input_ = input;
@@ -63,6 +67,8 @@ namespace CUDA_NETWORK
 
 	Blob<float> *Activation::Backward(Blob<float> *gradOutput)
 	{
+		gradOutput = SumGradients(gradOutput);
+
 		if (gradInput_ == nullptr || batchSize_ != gradOutput->num)
 		{
 			gradOutput = gradOutput;

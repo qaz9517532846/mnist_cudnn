@@ -5,6 +5,13 @@
 #include <cublas_v2.h>
 #include <curand.h>
 #include <cstdio>
+#include <iostream>
+#include <algorithm>
+
+inline int DivUp(int a, int b)
+{
+    return (a + b - 1) / b;
+}
 
 namespace CUDA_NETWORK
 {
@@ -145,6 +152,30 @@ namespace CUDA_NETWORK
             cublasHandle_t cublasHandle;
             cudnnHandle_t  cudnnHandle;
     };
+
+    /*struct GpuLaunchConfig 
+    {
+        // Number of threads per block.
+        int threadPerBlock = -1;
+        // Number of blocks for GPU kernel launch.
+        int blockCnt = -1;
+    };
+
+    //Returns grid and block size that achieves maximum potential occupancy for a device function.
+    template <typename T> GpuLaunchConfig GetGpuLaunchConfig(int workElementCnt, T kernelFun, size_t dynSharedMemSize, int blockSizeLimit)
+    {
+        GpuLaunchConfig config;
+        int blockCnt = 0;
+        int threadPerBlock = 0;
+
+        CheckCudaErrors(cudaOccupancyMaxPotentialBlockSize(&blockCnt, &threadPerBlock, kernelFun, dynSharedMemSize, blockSizeLimit));
+        blockCnt = std::min(blockCnt, DivUp(workElementCnt, threadPerBlock));
+        
+        config.threadPerBlock = threadPerBlock;
+        config.blockCnt = blockCnt;
+        
+        return config;
+    }*/
 }// namespace CUDA_NETWORK
 
 #endif

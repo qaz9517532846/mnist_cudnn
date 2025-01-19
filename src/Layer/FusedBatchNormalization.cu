@@ -17,8 +17,10 @@ namespace CUDA_NETWORK
     /****************************************************************
      * FusedBatchNormalization definition                           *
      ****************************************************************/
-    FusedBatchNormalization::FusedBatchNormalization(std::string name, cudnnBatchNormMode_t mode)
+    FusedBatchNormalization::FusedBatchNormalization(std::string name, Layer *inputFrom, cudnnBatchNormMode_t mode)
     {
+        SetLayerRelationship(inputFrom);
+
         layerName = name;
         mode_ = mode;
 
@@ -32,6 +34,7 @@ namespace CUDA_NETWORK
 
     Blob<float> *FusedBatchNormalization::Forward(Blob<float> *input)
     {
+        input = GetInput(input);
         // initialize weights and biases
         if (weights_ == nullptr)
         {
@@ -116,12 +119,14 @@ namespace CUDA_NETWORK
         return output_;
     }
 
-    Blob<float> *FusedBatchNormalization::Backward(Blob<float> *gradInput)
+    Blob<float> *FusedBatchNormalization::Backward(Blob<float> *gradOutput)
     {
+        gradOutput = SumGradients(gradOutput);
+
         // initialize grad_output back-propagation space
-        if (gradInput_ == nullptr || batchSize_ != gradInput->num)
+        if (gradInput_ == nullptr || batchSize_ != gradOutput->num)
         {
-            gradOutput_ = gradInput;
+            gradOutput_ = gradOutput;
             gradWeights_ = new Blob<float>(weights_->Shape());
             gradBiases_ = new Blob<float>(biases_->Shape());
 
