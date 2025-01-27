@@ -34,6 +34,9 @@ namespace CUDA_NETWORK
         float loss = 0.f;
 
         // each thread calculate entropy for each data and accumulate to shared memory
+        if (batchIdx > 0) return;
+
+        // each thread calculate entropy for each data and accumulate to shared memory
         for (int c = 0; c < numOutputs; c++)
             loss += target[batchIdx * numOutputs + c] * logf(predict[batchIdx * numOutputs + c]);
         workspace[batchIdx] = -loss;
@@ -85,11 +88,12 @@ namespace CUDA_NETWORK
 
     #if (DEBUG_LOSS)
         std::cout << "[[ LOSS ]]" << std::endl;
-        predict->print("predict", true);
-        target->print("target", true);
+        predict->Print("predict", true);
+        target->Print("target", true);
     #endif // DEBUG_LOSS
 
         int numBlocks = min(numBlocksPerSm * numSms, (target->Size() + BLOCK_DIM_1D - 1) / BLOCK_DIM_1D);
+
         SoftMaxLossKernel<<<numBlocks, BLOCK_DIM_1D, BLOCK_DIM_1D * sizeof(float), 0 >>>(dLoss, predict->Cuda(), target->Cuda(), dWorkspace, batchSize, numOutputs);
         cudaMemcpy(&hLoss, dLoss, sizeof(float), cudaMemcpyDeviceToHost);
     

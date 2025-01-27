@@ -221,7 +221,11 @@ namespace CUDA_NETWORK
 		{
 			// initialize containers handles
 			weights_ = new Blob<float>(1, input->channel, 1, weightSize / sizeof(float));
+			weightsM_ = new Blob<float>(1, input->channel, 1, weightSize / sizeof(float));
+			weightsV_ = new Blob<float>(1, input->channel, 1, weightSize / sizeof(float));
 			biases_  = new Blob<float>(numLayer_, hiddenSize_);	// bias size
+			biasesM_ = new Blob<float>(numLayer_, hiddenSize_);	// bias size
+			biasesV_ = new Blob<float>(numLayer_, hiddenSize_);	// bias size
 
 			// initialize weights
 			if(loadPretrain && freeze_)

@@ -43,7 +43,7 @@ mnist.Train("<Train path>", "<Train dataset>", batchSizeTrain, true);
 ```
 
 ``` bash
-$ ros2 run mnist_cudnn mnist_train
+$ ros2 run mnist_cudnn mnist_cnn_train
 ```
 
 ``` bash
@@ -97,7 +97,7 @@ mnist.Test("<image file>");
 ```
 
 ``` bash
-$ ros2 run mnist_cudnn mnist_test
+$ ros2 run mnist_cudnn mnist_cnn_test
 ```
 ``` bash
 [INFERENCE]

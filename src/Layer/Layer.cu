@@ -142,13 +142,19 @@ namespace CUDA_NETWORK
 
         if(weights_ == nullptr || biases_ == nullptr) return;
 
+		printf("He uniform distribution 1\n");
+
 	    // Create random network
 	    std::random_device rd;
 	    std::mt19937 gen(seed == 0 ? rd() : static_cast<unsigned int>(seed));
 
+		printf("He uniform distribution 2\n");
+
 	    // He uniform distribution
 	    float range = sqrt(6.f / input_->Size());	// He's initialization
 	    std::uniform_real_distribution<> dis(-range, range);
+
+		printf("He uniform distribution 3\n");
 
 	    for(int i = 0; i < weights_->Length(); i++)
 		    weights_->Ptr()[i] = static_cast<float>(dis(gen));

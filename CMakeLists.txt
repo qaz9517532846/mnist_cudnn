@@ -77,15 +77,25 @@ target_link_libraries(Layer ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas Helper Los
 target_link_libraries(NetWork ${CUDA_LIBRARIES} ${CUDNN_LIBRARY} cublas Layer Helper Blob)
 target_link_libraries(Mnist ${OpenCV_LIBRARIES} Blob)
 
-add_executable(mnist_train src/mnist_train.cpp)
-target_link_libraries(mnist_train Helper Blob Loss Layer NetWork Mnist)
-target_include_directories(mnist_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
-ament_target_dependencies(mnist_train rclcpp)
+add_executable(mnist_cnn_train example/train/mnist_cnn_train.cpp)
+target_link_libraries(mnist_cnn_train Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_cnn_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_cnn_train rclcpp)
 
-add_executable(mnist_test src/mnist_test.cpp)
-target_link_libraries(mnist_test Helper Blob Loss Layer NetWork Mnist)
-target_include_directories(mnist_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
-ament_target_dependencies(mnist_test rclcpp)
+add_executable(mnist_cnn_test example/test/mnist_cnn_test.cpp)
+target_link_libraries(mnist_cnn_test Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_cnn_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_cnn_test rclcpp)
+
+add_executable(mnist_rnn_train example/train/mnist_rnn_train.cpp)
+target_link_libraries(mnist_rnn_train Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_rnn_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_rnn_train rclcpp)
+
+add_executable(mnist_rnn_test example/test/mnist_rnn_test.cpp)
+target_link_libraries(mnist_rnn_test Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_rnn_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_rnn_test rclcpp)
 
 install(TARGETS
         Helper
@@ -99,8 +109,10 @@ install(TARGETS
         RUNTIME DESTINATION bin)
 
 install(TARGETS
-  mnist_train
-  mnist_test
+  mnist_cnn_train
+  mnist_rnn_train
+  mnist_cnn_test
+  mnist_rnn_test
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
