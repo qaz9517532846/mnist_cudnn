@@ -82,6 +82,11 @@ target_link_libraries(mnist_cnn_train Helper Blob Loss Layer NetWork Mnist)
 target_include_directories(mnist_cnn_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
 ament_target_dependencies(mnist_cnn_train rclcpp)
 
+add_executable(mnist_vgg16_train example/train/mnist_vgg16_train.cpp)
+target_link_libraries(mnist_vgg16_train Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_vgg16_train PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_vgg16_train rclcpp)
+
 add_executable(mnist_cnn_test example/test/mnist_cnn_test.cpp)
 target_link_libraries(mnist_cnn_test Helper Blob Loss Layer NetWork Mnist)
 target_include_directories(mnist_cnn_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
@@ -97,6 +102,11 @@ target_link_libraries(mnist_rnn_test Helper Blob Loss Layer NetWork Mnist)
 target_include_directories(mnist_rnn_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 ament_target_dependencies(mnist_rnn_test rclcpp)
 
+add_executable(mnist_vgg16_test example/test/mnist_vgg16_test.cpp)
+target_link_libraries(mnist_vgg16_test Helper Blob Loss Layer NetWork Mnist)
+target_include_directories(mnist_vgg16_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+ament_target_dependencies(mnist_vgg16_test rclcpp)
+
 install(TARGETS
         Helper
         Blob
@@ -111,8 +121,10 @@ install(TARGETS
 install(TARGETS
   mnist_cnn_train
   mnist_rnn_train
+  mnist_vgg16_train
   mnist_cnn_test
   mnist_rnn_test
+  mnist_vgg16_test
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

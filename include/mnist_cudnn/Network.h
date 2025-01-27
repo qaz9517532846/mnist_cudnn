@@ -29,6 +29,7 @@ namespace CUDA_NETWORK
             Blob<float> *Forward(Blob<float> *input);
             void Backward(Blob<float> *input = nullptr);
             void Update(float learningRate = 0.02f);
+            void UpdateRmsprop(float learningRate = 0.01f, float decay = 0.9f, float epsHat = 0.00000001f);
 
             int LoadPretrain();
             int WriteFile();

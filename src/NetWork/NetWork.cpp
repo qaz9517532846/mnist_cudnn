@@ -99,8 +99,7 @@ namespace CUDA_NETWORK
 
     void Network::Update(float learningRate)
     {
-	    if(phase == INTERFACE)
-		    return;
+	    if(phase == INTERFACE) return;
 
     #if (DEBUG_UPDATE)
 	    std::cout << "Start update.. lr = " << learningRate << std::endl;
@@ -118,6 +117,28 @@ namespace CUDA_NETWORK
 	    }
 	    nvtxRangePop();
     }
+
+	void Network::UpdateRmsprop(float learningRate, float decay, float epsHat)
+	{
+		if (phase == INTERFACE) return;
+		
+	#if (DEBUG_UPDATE)
+		std::cout << "Start update.. lr = " << learningRate << std::endl;
+	#endif
+	
+		nvtxRangePushA("Update");
+		for (auto layer : layersVect)
+		{
+			// if no parameters, then pass
+			if (layer->weights_ == nullptr || layer->gradWeights_ == nullptr ||
+				layer->biases_ == nullptr || layer->gradBiases_ == nullptr)
+            continue;
+			
+			layer->UpdateWeightsBiasesWithRmsprop(learningRate, decay, epsHat);
+		}
+		
+		nvtxRangePop();
+	}
 
     int Network::WriteFile()
     {
