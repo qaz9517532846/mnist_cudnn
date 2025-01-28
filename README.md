@@ -1,9 +1,11 @@
 # mnist_cudnn
-MNIST(National Institute of Standards and Technology database) handwriting recognition using Deep learning and CUDNN library under ROS 2 Foxy.
+MNIST(National Institute of Standards and Technology database) handwriting recognition using Deep learning and CUDNN library under ROS 2.
 
 ## Built with
 
 - ROS Foxy under Ubuntu 20.04 LTS
+
+- ROS Jazzy under Ubuntu 24.04 LTS
 
 ## Required Package
 
@@ -140,4 +142,4 @@ Result = 3
 
 This repository is for your reference only. copying, patent applications, and academic journals are strictly prohibited.
 
-Copyright © 2024 ZM Robotics Software Laboratory.
+Copyright © 2025 ZM Robotics Software Laboratory.
