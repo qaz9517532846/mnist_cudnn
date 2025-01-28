@@ -163,8 +163,6 @@ namespace CUDA_NETWORK
 	    for(int i = 0; i < biasesV_->Length(); i++)
 		    biasesV_->Ptr()[i] = 0.f;
 
-		printf("He uniform distribution\n");
-
 	    // copy initialized value to the device
 		weights_->To(DEV_TYPE::CUDA);
 		biases_->To(DEV_TYPE::CUDA);
@@ -318,6 +316,44 @@ namespace CUDA_NETWORK
 			// getchar();
 		#endif // DEBUG_UPDATE
 		}
+	}
+
+	void Layer::UpdateWeightsBiasesWithMomentum(float learningRate, float momentum)
+	{
+		if (weights_ != nullptr && gradWeights_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+			weights_->Print(name_ + "::weights (before update)", true);
+			grad_weights_->Print(name_ + "::gweights", true);
+		#endif // DEBUG_UPDATE
+
+        	/*
+         	 * mt = momentum * mt + lr * dw
+         	 * w = w - mt
+         	 */
+			//config = getGpuLaunchConfig(weights_->len(), momentum_update, 0, 0);
+			MomentumUpdate<<<BLOCK_DIM, BLOCK_DIM_1D>>>(weights_->Length(), weightsM_->Cuda(), weights_->Cuda(), gradWeights_->Cuda(), learningRate, momentum);
+		
+		#if (DEBUG_UPDATE)
+			weights_->Print(name_ + "weights (after update)", true);
+			// getchar();
+		#endif // DEBUG_UPDATE
+    	}
+
+		if (biases_ != nullptr && gradBiases_ != nullptr)
+		{
+		#if (DEBUG_UPDATE)
+			biases_->Print(name_ + "biases (before update)", true);
+			gradBiases_->Print(name_ + "gbiases", true);
+		#endif // DEBUG_UPDATE
+        	//config = getGpuLaunchConfig(biases_->len(), momentum_update, 0, 0);
+        	MomentumUpdate<<<BLOCK_DIM, BLOCK_DIM_1D>>>(biases_->Length(), biasesM_->Cuda(), biases_->Cuda(), gradBiases_->Cuda(), learningRate, momentum);
+		
+		#if (DEBUG_UPDATE)
+			biases_->Print(name_ + "biases (after update)", true);
+			// getchar();
+		#endif // DEBUG_UPDATE
+    	}
 	}
 
     float Layer::GetLoss(Blob<float> *target)

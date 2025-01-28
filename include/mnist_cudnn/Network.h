@@ -24,12 +24,13 @@ namespace CUDA_NETWORK
             Network();
             ~Network();
 
-            void AddLayer(Layer *layer);
+            Layer *AddLayer(Layer *layer);
 
             Blob<float> *Forward(Blob<float> *input);
             void Backward(Blob<float> *input = nullptr);
             void Update(float learningRate = 0.02f);
             void UpdateRmsprop(float learningRate = 0.01f, float decay = 0.9f, float epsHat = 0.00000001f);
+            void UpdateMomentum(float learningRate, float momentum);
 
             int LoadPretrain();
             int WriteFile();

@@ -26,12 +26,14 @@ namespace CUDA_NETWORK
 	    if(cuda != nullptr) delete cuda;
     }
 
-    void Network::AddLayer(Layer *layer)
+    Layer *Network::AddLayer(Layer *layer)
     {
 	    layersVect.push_back(layer);
 
 	    // tagging layer to stop gradient if it is the first layer
 	    if(layersVect.size() == 1) layersVect.at(0)->SetGradientStop();
+
+		return layer;
     }
 
     Blob<float> *Network::Forward(Blob<float> *input)
@@ -135,6 +137,28 @@ namespace CUDA_NETWORK
             continue;
 			
 			layer->UpdateWeightsBiasesWithRmsprop(learningRate, decay, epsHat);
+		}
+		
+		nvtxRangePop();
+	}
+
+	void Network::UpdateMomentum(float learningRate, float momentum)
+	{
+		if (phase == INTERFACE) return;
+		
+	#if (DEBUG_UPDATE)
+		std::cout << "Start update.. lr = " << learningRate << std::endl;
+	#endif
+	
+		nvtxRangePushA("Update");
+		for (auto layer : layersVect)
+		{
+			// if no parameters, then pass
+			if (layer->weights_ == nullptr || layer->gradWeights_ == nullptr ||
+				layer->biases_ == nullptr || layer->gradBiases_ == nullptr)
+            continue;
+			
+			layer->UpdateWeightsBiasesWithMomentum(learningRate, momentum);
 		}
 		
 		nvtxRangePop();

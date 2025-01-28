@@ -19,7 +19,7 @@ namespace CUDA_NETWORK
  	****************************************************************/
 	Add::Add(std::string name, Layer *inputFrom, Layer *input2From)
 	{
-		SetLayerRelationship(inputFrom);
+		SetLayerRelationship(inputFrom, input2From);
 
 		layerName = name;
 	}
@@ -51,9 +51,9 @@ namespace CUDA_NETWORK
 
     #if (DEBUG_ADD & 0x01)
         std::cout << name_ << "[FORWARD]" << std::endl;
-        input_->print(  name_ + "::input", true, input_->n());
-        input2_->print(  name_ + "::input", true, input2_->n());
-        output_->print( name_ + "::output", true);
+        input_->Print(name_ + "::input", true, input_->n());
+        input2_->Print(name_ + "::input", true, input2_->n());
+        output_->Print(name_ + "::output", true);
     #endif
 
         return output_;
@@ -79,9 +79,9 @@ namespace CUDA_NETWORK
 
     #if (DEBUG_ADD & 0x02)
         std::cout << name_ << "[BACKWARD]" << std::endl;
-        gradOutput_->print(name_ + "::gradients", true, gradOutput_->num);
+        gradOutput_->Print(name_ + "::gradients", true, gradOutput_->num);
         if (!gradientStop_)
-            gradInput_->print(name_ + "::gdata", true);
+            gradInput_->Print(name_ + "::gdata", true);
     #endif // DEBUG_PADDING
 
 		return gradInput_;

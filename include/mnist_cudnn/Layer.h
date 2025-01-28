@@ -87,6 +87,7 @@ namespace CUDA_NETWORK
             void UpdateWeightsBiases(float learningRate);
             void UpdateWeightsBiasesWithAdam(float learningRate, float beta1, float beta2, float epsHat, int step);
             void UpdateWeightsBiasesWithRmsprop(float learningRate, float decay, float epsHat);
+            void UpdateWeightsBiasesWithMomentum(float learningRate, float momentum);
 
             // cuda handle container
             CudaContext *cuda = nullptr;

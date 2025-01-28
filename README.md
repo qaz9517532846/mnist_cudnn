@@ -136,6 +136,8 @@ Result = 3
 
 [2]. cudnn-rnn-check - https://github.com/jzhang533/cudnn-rnn-check/tree/master
 
+[3]. DeepLearning-Training-Cuda - https://github.com/HangJie720/DeepLearning-Training-Cuda
+
 ------
 
 ## License:
