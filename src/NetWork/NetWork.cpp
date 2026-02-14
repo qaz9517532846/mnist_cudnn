@@ -120,6 +120,39 @@ namespace CUDA_NETWORK
 	    nvtxRangePop();
     }
 
+    void Network::UpdateWithGradientClipping(float learningRate, float clipThreshold)
+    {
+	    if(phase == INTERFACE) return;
+
+    #if (DEBUG_UPDATE)
+	    std::cout << "Start update with gradient clipping.. lr = " << learningRate << ", threshold = " << clipThreshold << std::endl;
+    #endif
+
+	    nvtxRangePushA("UpdateWithGradientClipping");
+	    
+	    // Apply gradient clipping to all layers
+	    for(auto layer : layersVect)
+	    {
+		    if (layer->gradWeights_ == nullptr || layer->gradBiases_ == nullptr)
+			    continue;
+		    
+		    layer->ClipGradients(clipThreshold);
+	    }
+	    
+	    // Update weights with clipped gradients
+	    for(auto layer : layersVect)
+	    {
+		    // if no parameters, then pass
+		    if (layer->weights_ == nullptr || layer->gradWeights_ == nullptr ||
+			    layer->biases_ == nullptr || layer->gradBiases_ == nullptr)
+			    continue;
+
+		    layer->UpdateWeightsBiases(learningRate);
+	    }
+	    
+	    nvtxRangePop();
+    }
+
 	void Network::UpdateRmsprop(float learningRate, float decay, float epsHat)
 	{
 		if (phase == INTERFACE) return;

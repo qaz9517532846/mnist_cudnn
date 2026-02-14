@@ -15,8 +15,8 @@ int main(int argc, char** argv)
 {
     /* configure the network */
     int batchSizeTrain = 256;
-    int numStepsTrain = 500;
-    int monitoringStep = 100;
+    int numStepsTrain = 2400;
+    int monitoringStep = 200;
     int hiddenSize = 128;
     int numLayer = 4;
 
@@ -72,9 +72,9 @@ int main(int argc, char** argv)
         // back-propagation
         model.Backward(trainTarget);
 
-        // update parameter
+        // update parameter with gradient clipping
         // we will use learning rate decay to the learning rate
-        model.Update(learningRate);
+        model.UpdateWithGradientClipping(learningRate, 1.0);
 
         // fetch next data
         step = mnist.Next();

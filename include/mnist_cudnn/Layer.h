@@ -38,6 +38,9 @@ namespace CUDA_NETWORK
             Blob<float> *GetGrad();
             Blob<float> *GetInput(Blob<float> *input);
             Blob<float> *SumGradients(Blob<float> *grad);
+            
+            /* Gradient Clipping */
+            void ClipGradients(float threshold = 1.0f);
 
             /* Weight Freeze or Unfreeze */
             void Freeze();
